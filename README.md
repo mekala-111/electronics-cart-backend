@@ -29,8 +29,8 @@ pnpm prisma:generate
 pnpm start:dev
 ```
 
-Health: `http://localhost:3000/api/health`  
-Swagger (dev only): `http://localhost:3000/docs`
+Health: `http://localhost:3051/api/health`  
+Swagger (dev only): `http://localhost:3051/docs`
 
 ## Production deploy order
 

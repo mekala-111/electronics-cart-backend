@@ -25,5 +25,5 @@ scrape_configs:
     metrics_path: /api/health/live
     scheme: http
     static_configs:
-      - targets: ["host.docker.internal:3000"]
+      - targets: ["host.docker.internal:3051"]
     # Health is JSON — keep for blackbox-style up checks via blackbox exporter instead if preferred.

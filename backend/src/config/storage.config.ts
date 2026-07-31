@@ -16,7 +16,7 @@ export default registerAs('storage', () => {
     endpoint: process.env.STORAGE_ENDPOINT ?? '',
     accessKey: process.env.STORAGE_ACCESS_KEY ?? '',
     secretKey: process.env.STORAGE_SECRET_KEY ?? '',
-    publicUrl: process.env.STORAGE_PUBLIC_URL ?? 'http://localhost:3000/uploads',
+    publicUrl: process.env.STORAGE_PUBLIC_URL ?? 'http://localhost:3051/uploads',
     localPath: process.env.STORAGE_LOCAL_PATH ?? './uploads',
   };
 });

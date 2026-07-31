@@ -1,7 +1,7 @@
 import http from 'k6/http';
 import { check, sleep } from 'k6';
 
-const BASE = __ENV.BASE_URL || 'http://127.0.0.1:3000/api';
+const BASE = __ENV.BASE_URL || 'http://127.0.0.1:3051/api';
 const TOKEN = __ENV.ACCESS_TOKEN || '';
 
 export const options = {

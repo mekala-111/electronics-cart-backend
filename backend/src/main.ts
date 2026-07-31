@@ -26,7 +26,7 @@ async function bootstrap() {
 
   const config = app.get(ConfigService);
   const apiPrefix = config.get<string>('app.apiPrefix', 'api');
-  const port = config.get<number>('app.port', 3000);
+  const port = config.get<number>('app.port', 3051);
   const corsOrigins = config.get<string[]>('app.corsOrigins', ['*']);
   const trustProxy = config.get<boolean>('security.trustProxy', false);
   const hstsMaxAge = config.get<number>('security.hstsMaxAgeSeconds', 31_536_000);

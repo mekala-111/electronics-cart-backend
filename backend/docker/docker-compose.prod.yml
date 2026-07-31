@@ -76,7 +76,7 @@ services:
       redis:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health/ready"]
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3051/api/health/ready"]
       interval: 20s
       timeout: 5s
       retries: 5
@@ -84,7 +84,7 @@ services:
     networks: [internal]
     # Nginx on host proxies to this; expose only on loopback if desired:
     ports:
-      - "127.0.0.1:3000:3000"
+      - "127.0.0.1:3051:3051"
 
   worker:
     build:

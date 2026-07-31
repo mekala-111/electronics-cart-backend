@@ -10,7 +10,7 @@ export default registerAs('app', () => {
 
   return {
     name: process.env.APP_NAME ?? 'Electronics Cart API',
-    port: Number(process.env.PORT ?? 3000),
+    port: Number(process.env.PORT ?? 3051),
     env,
     apiPrefix: 'api',
     corsOrigins,

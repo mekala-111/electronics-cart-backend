@@ -16,8 +16,8 @@ pnpm start:dev
 Production template: `.env.production.example`  
 Ops docs: `docs/` (ProductionFixes, DeploymentSafety, MigrationSafety, …)
 
-Swagger: http://localhost:3000/docs (disabled in production by default)  
-Health: http://localhost:3000/api/health
+Swagger: http://localhost:3051/docs (disabled in production by default)  
+Health: http://localhost:3051/api/health
 
 ## Process roles
 

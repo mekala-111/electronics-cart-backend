@@ -35,9 +35,9 @@ docker compose up -d postgres redis   # from backend/
 pnpm start:dev
 ```
 
-- API: `http://localhost:3000/api`
-- Health: `http://localhost:3000/api/health`
-- Swagger: `http://localhost:3000/docs`
+- API: `http://localhost:3051/api`
+- Health: `http://localhost:3051/api/health`
+- Swagger: `http://localhost:3051/docs`
 
 ## Layering
 

@@ -63,6 +63,7 @@ services:
     env_file:
       - .env.example
     environment:
+      PORT: "3051"
       DATABASE_URL: postgresql://electronics:electronics@postgres:5432/electronics_cart
       DIRECT_URL: postgresql://electronics:electronics@postgres:5432/electronics_cart
       REDIS_URL: redis://redis:6379
@@ -75,7 +76,7 @@ services:
       S3_BUCKET: electronics-cart
       S3_REGION: us-east-1
     ports:
-      - "3000:3000"
+      - "3051:3051"
     depends_on:
       postgres:
         condition: service_healthy
