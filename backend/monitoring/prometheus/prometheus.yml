@@ -1,0 +1,29 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: node-exporter
+    static_configs:
+      - targets: ["node-exporter:9100"]
+
+  - job_name: postgres-exporter
+    static_configs:
+      - targets: ["postgres-exporter:9187"]
+
+  - job_name: redis-exporter
+    static_configs:
+      - targets: ["redis-exporter:9121"]
+
+  - job_name: nginx-exporter
+    static_configs:
+      - targets: ["nginx-exporter:9113"]
+
+  # Application business metrics flow through Metrics Framework → live_metrics / events.
+  # Do not scrape a second application metrics stack. Use /api/admin/analytics/system for ops snapshots.
+  - job_name: electronics-cart-health
+    metrics_path: /api/health/live
+    scheme: http
+    static_configs:
+      - targets: ["host.docker.internal:3000"]
+    # Health is JSON — keep for blackbox-style up checks via blackbox exporter instead if preferred.

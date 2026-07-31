@@ -1,0 +1,117 @@
+# Production compose — API + worker + data plane (no Adminer/Mailhog)
+# docker compose -f backend/docker/docker-compose.prod.yml --env-file backend/.env up -d
+name: ec-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-electronics}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-electronics_cart}
+    volumes:
+      - ec_prod_pg:/var/lib/postgresql/data
+      - ../backup/postgres:/backup
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [internal]
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    command:
+      - redis-server
+      - --appendonly
+      - "yes"
+      - --appendfsync
+      - everysec
+      - --maxmemory
+      - ${REDIS_MAXMEMORY:-512mb}
+      - --maxmemory-policy
+      - allkeys-lru
+      - --tcp-keepalive
+      - "60"
+    volumes:
+      - ec_prod_redis:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+    networks: [internal]
+
+  minio:
+    image: minio/minio:latest
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY}
+    volumes:
+      - ec_prod_minio:/data
+    networks: [internal]
+
+  api:
+    build:
+      context: ../..
+      dockerfile: backend/docker/Dockerfile
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      PROCESS_ROLE: api
+      DISABLE_WORKERS: "true"
+      TRUST_PROXY: "true"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-electronics}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-electronics_cart}
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:3000/api/health/ready"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 45s
+    networks: [internal]
+    # Nginx on host proxies to this; expose only on loopback if desired:
+    ports:
+      - "127.0.0.1:3000:3000"
+
+  worker:
+    build:
+      context: ../..
+      dockerfile: backend/docker/Dockerfile.worker
+    restart: unless-stopped
+    env_file:
+      - ../.env
+    environment:
+      PROCESS_ROLE: worker
+      DISABLE_WORKERS: "false"
+      DATABASE_URL: postgresql://${POSTGRES_USER:-electronics}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-electronics_cart}
+      REDIS_URL: redis://redis:6379
+      STORAGE_DRIVER: ${STORAGE_DRIVER:-s3}
+      S3_ENDPOINT: ${S3_ENDPOINT:-http://minio:9000}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks: [internal]
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  ec_prod_pg:
+  ec_prod_redis:
+  ec_prod_minio:

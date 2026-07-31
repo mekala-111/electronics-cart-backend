@@ -1,0 +1,45 @@
+{
+  "name": "electronics-cart-database",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Electronics Cart enterprise PostgreSQL schema + migration verification",
+  "scripts": {
+    "prisma:validate": "prisma validate",
+    "prisma:generate": "prisma generate",
+    "db:deploy": "bash scripts/deploy-migrations.sh",
+    "db:seed": "prisma db seed",
+    "verify": "bash scripts/verify-all.sh",
+    "verify:clean": "bash scripts/verify-clean.sh",
+    "verify:forward": "bash scripts/verify-forward.sh",
+    "verify:rollback": "bash scripts/verify-rollback.sh",
+    "verify:seed": "bash scripts/verify-seed.sh",
+    "verify:enums": "bash scripts/verify-enums.sh",
+    "verify:indexes": "bash scripts/verify-indexes.sh",
+    "verify:relations": "bash scripts/verify-relations.sh",
+    "verify:performance": "bash scripts/verify-performance.sh",
+    "verify:transactions": "bash scripts/verify-transactions.sh",
+    "verify:production": "bash scripts/verify-production.sh",
+    "verify:drift": "bash scripts/verify-schema-drift.sh",
+    "verify:backup": "bash scripts/verify-backup.sh",
+    "test:db": "bash ../tests/database/run-verification.sh"
+  },
+  "prisma": {
+    "schema": "schema.prisma",
+    "seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "6.19.0",
+    "pg": "^8.16.3"
+  },
+  "devDependencies": {
+    "@types/node": "^22.15.30",
+    "@types/pg": "^8.15.4",
+    "prisma": "6.19.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.8.3"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

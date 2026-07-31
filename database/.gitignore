@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+.env.*
+!.env.example
+reports/*.md
+reports/*.raw.txt
+reports/*.diff
+reports/*.stderr.txt
+reports/backup/
+reports/.tmp_pulled.prisma
+!reports/.gitkeep

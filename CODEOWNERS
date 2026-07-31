@@ -1,0 +1,5 @@
+* @electronics-cart/maintainers
+
+/backend/ @electronics-cart/backend
+/database/ @electronics-cart/backend
+/.github/ @electronics-cart/backend

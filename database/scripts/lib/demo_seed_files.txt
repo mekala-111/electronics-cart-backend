@@ -1,0 +1,17 @@
+# Numbered *_seed.sql files that contain demo/sample transactional data.
+# Skipped in production unless APPLY_DEMO_DATA=1 or --demo-data.
+003_seed.sql
+006_catalog_seed.sql
+009_inventory_seed.sql
+012_order_seed.sql
+015_order_extension_seed.sql
+018_payment_seed.sql
+021_payment_extension_seed.sql
+024_shipping_seed.sql
+027_shipping_extension_seed.sql
+030_warranty_seed.sql
+033_warranty_extension_seed.sql
+036_marketing_seed.sql
+039_marketing_extension_seed.sql
+042_analytics_seed.sql
+045_analytics_extension_seed.sql

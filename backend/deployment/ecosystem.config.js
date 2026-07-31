@@ -1,0 +1,51 @@
+/**
+ * PM2 ecosystem — API cluster + dedicated workers
+ * Usage: pm2 start backend/deployment/ecosystem.config.js --env production
+ */
+module.exports = {
+  apps: [
+    {
+      name: 'ec-api',
+      cwd: __dirname + '/..',
+      script: 'dist/main.js',
+      instances: 'max',
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PROCESS_ROLE: 'api',
+        DISABLE_WORKERS: 'true',
+        TRUST_PROXY: 'true',
+      },
+      max_memory_restart: '1024M',
+      kill_timeout: 10_000,
+      listen_timeout: 10_000,
+      wait_ready: false,
+      exp_backoff_restart_delay: 200,
+      node_args: '--max-old-space-size=1024',
+      out_file: 'logs/api-out.log',
+      error_file: 'logs/api-error.log',
+      merge_logs: true,
+      time: true,
+    },
+    {
+      name: 'ec-worker',
+      cwd: __dirname + '/..',
+      script: 'dist/main.js',
+      instances: 1,
+      exec_mode: 'fork',
+      env: {
+        NODE_ENV: 'production',
+        PROCESS_ROLE: 'worker',
+        DISABLE_WORKERS: 'false',
+      },
+      max_memory_restart: '1024M',
+      kill_timeout: 30_000,
+      exp_backoff_restart_delay: 500,
+      node_args: '--max-old-space-size=1024',
+      out_file: 'logs/worker-out.log',
+      error_file: 'logs/worker-error.log',
+      merge_logs: true,
+      time: true,
+    },
+  ],
+};

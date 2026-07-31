@@ -1,0 +1,91 @@
+name: Database Migration Verification
+
+on:
+  push:
+    paths:
+      - "database/**"
+      - "tests/database/**"
+      - "docs/database/**"
+      - ".github/workflows/database-verification.yml"
+  pull_request:
+    paths:
+      - "database/**"
+      - "tests/database/**"
+      - "docs/database/**"
+      - ".github/workflows/database-verification.yml"
+  workflow_dispatch:
+
+jobs:
+  verify-migrations:
+    name: Verify SQL migrations 001–045 (v1.0)
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: electronics
+          POSTGRES_PASSWORD: electronics
+          POSTGRES_DB: electronics_cart
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U electronics -d electronics_cart"
+          --health-interval 2s
+          --health-timeout 5s
+          --health-retries 30
+
+    env:
+      DATABASE_URL: postgresql://electronics:electronics@127.0.0.1:5432/electronics_cart
+      PGHOST: 127.0.0.1
+      PGPORT: "5432"
+      PGUSER: electronics
+      PGPASSWORD: electronics
+      PGDATABASE: electronics_cart
+      USE_DOCKER_PSQL: "0"
+      RESTORE_DB: electronics_cart_restore
+
+    defaults:
+      run:
+        working-directory: database
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Install dependencies
+        run: npm install --no-fund --no-audit
+
+      - name: Make scripts executable
+        run: chmod +x scripts/*.sh scripts/lib/*.sh
+
+      - name: Prisma Validate
+        run: npx prisma validate
+
+      - name: Prisma Generate
+        run: npx prisma generate
+
+      - name: Full verification suite
+        run: bash scripts/verify-all.sh
+        # Includes: clean install, forward, rollback, seed, FKs, indexes,
+        # performance, transactions, schema drift, backup/restore, production dry-run
+
+      - name: Upload verification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: database-verification-reports
+          path: |
+            database/reports/**
+            reports/**
+            DATABASE_VERIFICATION_SUMMARY.md
+          if-no-files-found: warn

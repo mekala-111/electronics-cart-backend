@@ -1,0 +1,22 @@
+# Exporter sidecar reference (compose fragment — not started by default)
+# Wire into an ops compose stack on the VPS when ready.
+services:
+  node-exporter:
+    image: prom/node-exporter:v1.8.2
+    network_mode: host
+    pid: host
+
+  postgres-exporter:
+    image: quay.io/prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_NAME: ${DATABASE_URL}
+
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.62.0
+    environment:
+      REDIS_ADDR: ${REDIS_URL:-redis://redis:6379}
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.3.0
+    command:
+      - -nginx.scrape-uri=http://127.0.0.1:8080/stub_status

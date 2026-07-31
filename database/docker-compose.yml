@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: electronics_cart_verify_pg
+    environment:
+      POSTGRES_USER: electronics
+      POSTGRES_PASSWORD: electronics
+      POSTGRES_DB: electronics_cart
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U electronics -d electronics_cart"]
+      interval: 2s
+      timeout: 5s
+      retries: 30
+    volumes:
+      - electronics_cart_verify_pg:/var/lib/postgresql/data
+
+volumes:
+  electronics_cart_verify_pg:
