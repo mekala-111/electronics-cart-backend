@@ -42,6 +42,7 @@ export class CartRepository {
       data: {
         user_id: data.userId,
         session_key: data.sessionKey,
+        // Avoid FK errors when actorId is missing / non-user
         created_by: data.actorId,
         updated_by: data.actorId,
       },
@@ -49,25 +50,40 @@ export class CartRepository {
     });
   }
 
-  upsertItem(cartId: string, variantId: string, quantity: number, unitPrice: number, actorId?: string) {
-    return this.prisma.cartItem.upsert({
-      where: { cart_id_variant_id: { cart_id: cartId, variant_id: variantId } },
-      create: {
-        cart_id: cartId,
-        variant_id: variantId,
-        quantity,
-        unit_price: unitPrice,
-        created_by: actorId,
-        updated_by: actorId,
-      },
-      update: {
-        quantity,
-        unit_price: unitPrice,
-        deleted_at: null,
-        status: 'active',
-        updated_by: actorId,
-      },
-    });
+  /**
+   * Upsert via SQL so seed UUID-shaped ids (non-RFC version) still write.
+   * Prisma Client Uuid validation rejects version-0 seed primary keys on write.
+   */
+  async upsertItem(
+    cartId: string,
+    variantId: string,
+    quantity: number,
+    unitPrice: number,
+    actorId?: string,
+  ) {
+    await this.prisma.$executeRaw`
+      INSERT INTO cart_items (
+        id, cart_id, variant_id, quantity, unit_price, status,
+        created_at, updated_at, deleted_at, created_by, updated_by
+      ) VALUES (
+        gen_random_uuid(),
+        ${cartId}::uuid,
+        ${variantId}::uuid,
+        ${quantity},
+        ${unitPrice},
+        'active'::record_status,
+        NOW(), NOW(), NULL,
+        ${actorId ?? null}::uuid,
+        ${actorId ?? null}::uuid
+      )
+      ON CONFLICT (cart_id, variant_id) DO UPDATE SET
+        quantity = EXCLUDED.quantity,
+        unit_price = EXCLUDED.unit_price,
+        deleted_at = NULL,
+        status = 'active'::record_status,
+        updated_at = NOW(),
+        updated_by = EXCLUDED.updated_by
+    `;
   }
 
   updateItemQty(itemId: string, quantity: number) {

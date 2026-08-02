@@ -238,12 +238,39 @@ export class CatalogService {
 
   async productMedia(id: string) {
     await this.requireProduct(id);
-    return this.products.media(id);
+    const rows = await this.products.media(id);
+    return rows.map((m) => ({
+      id: m.id,
+      altText: m.alt_text,
+      isPrimary: m.is_primary,
+      sortOrder: m.sort_order,
+      file: {
+        id: m.media_file.id,
+        bucket: m.media_file.bucket,
+        objectKey: m.media_file.object_key,
+        mimeType: m.media_file.mime_type,
+        kind: m.media_file.kind,
+        // BigInt cannot JSON.stringify — expose as number
+        byteSize: Number(m.media_file.byte_size),
+      },
+    }));
   }
 
   async productVideos(id: string) {
     await this.requireProduct(id);
-    return this.products.videos(id);
+    const rows = await this.products.videos(id);
+    return rows.map((m) => ({
+      id: m.id,
+      altText: m.alt_text,
+      file: {
+        id: m.media_file.id,
+        bucket: m.media_file.bucket,
+        objectKey: m.media_file.object_key,
+        mimeType: m.media_file.mime_type,
+        durationMs: m.media_file.duration_ms,
+        byteSize: Number(m.media_file.byte_size),
+      },
+    }));
   }
 
   async productQuestions(_id: string) {

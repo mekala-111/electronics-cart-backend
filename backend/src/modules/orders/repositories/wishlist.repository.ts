@@ -22,14 +22,23 @@ export class WishlistRepository {
     });
   }
 
-  addItem(wishlistId: string, variantId: string) {
-    return this.prisma.wishlistItem.upsert({
-      where: {
-        wishlist_id_variant_id: { wishlist_id: wishlistId, variant_id: variantId },
-      },
-      create: { wishlist_id: wishlistId, variant_id: variantId },
-      update: { deleted_at: null, status: 'active' },
-    });
+  /** Raw upsert — seed variant UUIDs are not always RFC v4 (Prisma write validation). */
+  async addItem(wishlistId: string, variantId: string) {
+    await this.prisma.$executeRaw`
+      INSERT INTO wishlist_items (
+        id, wishlist_id, variant_id, status, created_at, updated_at, deleted_at
+      ) VALUES (
+        gen_random_uuid(),
+        ${wishlistId}::uuid,
+        ${variantId}::uuid,
+        'active'::record_status,
+        NOW(), NOW(), NULL
+      )
+      ON CONFLICT (wishlist_id, variant_id) DO UPDATE SET
+        deleted_at = NULL,
+        status = 'active'::record_status,
+        updated_at = NOW()
+    `;
   }
 
   removeItem(itemId: string) {

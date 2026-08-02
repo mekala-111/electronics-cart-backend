@@ -23,4 +23,12 @@ do
   echo "[seed-storefront] applying $(basename "${f}")"
   db_psql_file "${f}"
 done
+
+# Bust catalog/marketing caches so enriched seed is visible immediately
+if command -v redis-cli >/dev/null 2>&1; then
+  echo "[seed-storefront] flushing catalog/marketing cache keys"
+  redis-cli --scan --pattern 'catalog:*' | while read -r k; do redis-cli DEL "$k" >/dev/null; done || true
+  redis-cli --scan --pattern 'marketing:*' | while read -r k; do redis-cli DEL "$k" >/dev/null; done || true
+fi
+
 ok "storefront reference seeds applied"
