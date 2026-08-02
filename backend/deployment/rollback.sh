@@ -17,9 +17,13 @@ fi
 
 if ! command -v pnpm >/dev/null 2>&1; then
   if command -v corepack >/dev/null 2>&1; then
-    corepack enable
-    corepack prepare pnpm@9.15.9 --activate
-  else
+    corepack enable || true
+    corepack prepare pnpm@9.15.9 --activate || true
+  fi
+  if ! command -v pnpm >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+    npm install -g pnpm@9.15.9
+  fi
+  if ! command -v pnpm >/dev/null 2>&1; then
     echo "[rollback] pnpm not found" >&2
     exit 1
   fi

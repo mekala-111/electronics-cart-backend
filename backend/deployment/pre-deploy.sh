@@ -11,17 +11,30 @@ if [[ -f "$ROOT/.env" ]]; then
   set +a
 fi
 
-# Prefer pnpm; bootstrap via corepack if missing
-if ! command -v pnpm >/dev/null 2>&1; then
+# Prefer pnpm; bootstrap via corepack or npm if missing
+ensure_pnpm() {
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
   if command -v corepack >/dev/null 2>&1; then
     echo "[pre-deploy] enabling pnpm via corepack..."
-    corepack enable
-    corepack prepare pnpm@9.15.9 --activate
-  else
-    echo "[pre-deploy] pnpm not found — install Node 22+ with corepack, or: npm i -g pnpm@9" >&2
+    corepack enable || true
+    corepack prepare pnpm@9.15.9 --activate || true
+  fi
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v npm >/dev/null 2>&1; then
+    echo "[pre-deploy] installing pnpm@9 via npm -g..."
+    npm install -g pnpm@9.15.9
+  fi
+  if ! command -v pnpm >/dev/null 2>&1; then
+    echo "[pre-deploy] pnpm not found — install Node 18+ with npm, then: npm i -g pnpm@9" >&2
     exit 1
   fi
-fi
+}
+
+ensure_pnpm
 
 required=(DATABASE_URL REDIS_URL JWT_SECRET JWT_REFRESH_SECRET NODE_ENV)
 for k in "${required[@]}"; do
