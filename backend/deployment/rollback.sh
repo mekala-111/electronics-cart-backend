@@ -51,15 +51,16 @@ ensure_pnpm
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git checkout "$REV"
+  export HUSKY=0
   if [[ -f pnpm-lock.yaml ]]; then
     pnpm install --frozen-lockfile
-    pnpm run build
+    pnpm exec nest build
   elif [[ -f package-lock.json ]]; then
-    npm ci
-    npm run build
+    NPM_CONFIG_PRODUCTION=false npm ci --include=dev --ignore-scripts=false
+    npx nest build
   else
     pnpm install
-    pnpm run build
+    pnpm exec nest build
   fi
 fi
 pm2 startOrReload deployment/ecosystem.config.js --env production --update-env

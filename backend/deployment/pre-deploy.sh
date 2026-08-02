@@ -76,12 +76,15 @@ fi
 
 PKG_MGR="pnpm"
 echo "[pre-deploy] install..."
+# Ensure build tooling (@nestjs/cli, typescript, etc.) is installed even when
+# NODE_ENV=production is set in .env (npm otherwise omits devDependencies).
+export HUSKY=0
 if [[ -f pnpm-lock.yaml ]]; then
   pnpm install --frozen-lockfile
 elif [[ -f package-lock.json ]]; then
   echo "[pre-deploy] no pnpm-lock.yaml — using npm ci with package-lock.json"
   PKG_MGR="npm"
-  npm ci
+  NPM_CONFIG_PRODUCTION=false npm ci --include=dev --ignore-scripts=false
 else
   echo "[pre-deploy] warning: no lockfile — running pnpm install" >&2
   pnpm install
@@ -91,11 +94,11 @@ echo "[pre-deploy] prisma generate..."
 if [[ "$PKG_MGR" == "npm" ]]; then
   npx prisma generate --schema ../database/schema.prisma
   echo "[pre-deploy] build..."
-  npm run build
+  npx nest build
 else
   pnpm exec prisma generate --schema ../database/schema.prisma
   echo "[pre-deploy] build..."
-  pnpm run build
+  pnpm exec nest build
 fi
 
 echo "[pre-deploy] validating environment (compiled)..."
