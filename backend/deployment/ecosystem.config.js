@@ -1,7 +1,3 @@
-/**
- * PM2 ecosystem — API cluster + dedicated workers
- * Usage: pm2 start backend/deployment/ecosystem.config.js --env production
- */
 module.exports = {
   apps: [
     {
@@ -15,6 +11,14 @@ module.exports = {
         PROCESS_ROLE: 'api',
         DISABLE_WORKERS: 'true',
         TRUST_PROXY: 'true',
+        PORT: process.env.PORT || '3051',
+      },
+      env_production: {
+        NODE_ENV: 'production',
+        PROCESS_ROLE: 'api',
+        DISABLE_WORKERS: 'true',
+        TRUST_PROXY: 'true',
+        PORT: process.env.PORT || '3051',
       },
       max_memory_restart: '1024M',
       kill_timeout: 10_000,
@@ -34,6 +38,11 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       env: {
+        NODE_ENV: 'production',
+        PROCESS_ROLE: 'worker',
+        DISABLE_WORKERS: 'false',
+      },
+      env_production: {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'worker',
         DISABLE_WORKERS: 'false',

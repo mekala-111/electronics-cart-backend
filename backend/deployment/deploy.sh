@@ -34,6 +34,10 @@ cleanup_on_fail() {
     if [[ -n "${PREV_REV}" ]]; then
       ./deployment/rollback.sh "${PREV_REV}" || true
     fi
+    # Always return to main so the next deploy is not stuck in detached HEAD
+    if git rev-parse --abbrev-ref origin/main >/dev/null 2>&1; then
+      git checkout -B main origin/main || true
+    fi
   fi
   exit "$code"
 }
