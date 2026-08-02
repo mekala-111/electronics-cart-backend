@@ -1,5 +1,6 @@
--- Production reference: warehouses + stock for storefront sample variant.
+-- Production reference: warehouses + stock for MacBook variant only.
 -- Requires 005_catalog_storefront.sql (variant 37000000-...-0001).
+-- Flash-sale variant ...0002 inventory is in 008_catalog_enrichment.sql (after that variant is created).
 
 BEGIN;
 
@@ -27,8 +28,7 @@ INSERT INTO inventory (
   id, warehouse_id, bin_id, variant_id,
   available_quantity, reserved_quantity, damaged_quantity, in_transit_quantity,
   reorder_level, maximum_stock, last_stock_update, status, created_by, updated_by
-) VALUES
-(
+) VALUES (
   '42000000-0000-0000-0000-000000000001',
   '40000000-0000-0000-0000-000000000001',
   '40400000-0000-0000-0000-000000000001',
@@ -37,17 +37,6 @@ INSERT INTO inventory (
   5, 50, NOW(), 'active',
   '00000000-0000-0000-0000-000000000001',
   '00000000-0000-0000-0000-000000000001'
-),
-(
-  '42000000-0000-0000-0000-000000000002',
-  '40000000-0000-0000-0000-000000000001',
-  '40400000-0000-0000-0000-000000000001',
-  '37000000-0000-0000-0000-000000000002',
-  15, 0, 0, 0,
-  3, 40, NOW(), 'active',
-  '00000000-0000-0000-0000-000000000001',
-  '00000000-0000-0000-0000-000000000001'
-)
-ON CONFLICT (id) DO NOTHING;
+) ON CONFLICT (id) DO NOTHING;
 
 COMMIT;

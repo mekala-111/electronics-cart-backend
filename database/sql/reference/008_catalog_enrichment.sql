@@ -167,4 +167,20 @@ VALUES (
   '00000000-0000-0000-0000-000000000001'
 ) ON CONFLICT (id) DO NOTHING;
 
+-- Inventory for flash-sale variant (must run AFTER variant ...0002 exists)
+INSERT INTO inventory (
+  id, warehouse_id, bin_id, variant_id,
+  available_quantity, reserved_quantity, damaged_quantity, in_transit_quantity,
+  reorder_level, maximum_stock, last_stock_update, status, created_by, updated_by
+) VALUES (
+  '42000000-0000-0000-0000-000000000002',
+  '40000000-0000-0000-0000-000000000001',
+  '40400000-0000-0000-0000-000000000001',
+  '37000000-0000-0000-0000-000000000002',
+  15, 0, 0, 0,
+  3, 40, NOW(), 'active',
+  '00000000-0000-0000-0000-000000000001',
+  '00000000-0000-0000-0000-000000000001'
+) ON CONFLICT (id) DO NOTHING;
+
 COMMIT;
