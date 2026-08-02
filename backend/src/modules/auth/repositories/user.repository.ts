@@ -150,7 +150,7 @@ export class UserRepository {
 
   /**
    * Seed role IDs are UUID-shaped but not RFC v4 — Prisma Client rejects them on write.
-   * Use SQL so FK to roles(id) still works.
+   * Unique is partial (deleted_at IS NULL) — plain ON CONFLICT (user_id, role_id) fails 42P10.
    */
   async assignRole(userId: string, roleId: string): Promise<void> {
     await this.prisma.$executeRaw`
@@ -163,7 +163,8 @@ export class UserRepository {
         'active'::record_status,
         NOW(), NOW(), NULL
       )
-      ON CONFLICT (user_id, role_id) DO UPDATE SET
+      ON CONFLICT (user_id, role_id) WHERE deleted_at IS NULL
+      DO UPDATE SET
         status = 'active'::record_status,
         deleted_at = NULL,
         updated_at = NOW()
