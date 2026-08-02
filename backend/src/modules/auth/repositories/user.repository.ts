@@ -95,26 +95,36 @@ export class UserRepository {
     providerUserId: string;
     email?: string | null;
   }) {
-    return this.prisma.oauthAccount.upsert({
-      where: {
-        provider_provider_user_id: {
+    // ponytail: DB unique is partial (deleted_at IS NULL) — Prisma upsert ON CONFLICT can't use it.
+    return this.prisma.$transaction(async (tx) => {
+      const existing = await tx.oauthAccount.findFirst({
+        where: {
           provider: data.provider,
           provider_user_id: data.providerUserId,
+          deleted_at: null,
         },
-      },
-      create: {
-        user_id: data.userId,
-        provider: data.provider,
-        provider_user_id: data.providerUserId,
-        email: data.email?.toLowerCase() ?? null,
-        status: RecordStatus.active,
-      },
-      update: {
-        user_id: data.userId,
-        email: data.email?.toLowerCase() ?? null,
-        status: RecordStatus.active,
-        deleted_at: null,
-      },
+      });
+      const email = data.email?.toLowerCase() ?? null;
+      if (existing) {
+        return tx.oauthAccount.update({
+          where: { id: existing.id },
+          data: {
+            user_id: data.userId,
+            email,
+            status: RecordStatus.active,
+            deleted_at: null,
+          },
+        });
+      }
+      return tx.oauthAccount.create({
+        data: {
+          user_id: data.userId,
+          provider: data.provider,
+          provider_user_id: data.providerUserId,
+          email,
+          status: RecordStatus.active,
+        },
+      });
     });
   }
 
