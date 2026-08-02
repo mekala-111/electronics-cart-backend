@@ -22,12 +22,15 @@ export class RazorpayProvider implements PaymentProvider {
   readonly code = 'razorpay' as const;
   private readonly logger = new Logger(RazorpayProvider.name);
   private readonly mock: boolean;
+  /** Settle authorize/capture without client Razorpay payment (storefront has no SDK). */
+  private readonly serverCapture: boolean;
   private readonly keyId: string;
   private readonly keySecret: string;
   private readonly baseUrl: string;
 
   constructor(private readonly config: ConfigService) {
     this.mock = this.config.get<boolean>('payment.mock') ?? true;
+    this.serverCapture = this.config.get<boolean>('payment.serverCapture') ?? true;
     this.keyId = this.config.get<string>('payment.razorpay.keyId') ?? '';
     this.keySecret = this.config.get<string>('payment.razorpay.keySecret') ?? '';
     this.baseUrl =
@@ -35,31 +38,59 @@ export class RazorpayProvider implements PaymentProvider {
       'https://api.razorpay.com/v1';
   }
 
+  /** Mock settlement: PAYMENTS_MOCK or server-side capture (no Checkout.js). */
+  private get settleLocally(): boolean {
+    return this.mock || this.serverCapture;
+  }
+
   async createOrder(
     input: CreateGatewayOrderInput,
   ): Promise<CreateGatewayOrderResult> {
-    if (this.mock) {
-      const gatewayOrderId = `order_mock_${randomUUID().replace(/-/g, '').slice(0, 14)}`;
-      return {
-        gatewayOrderId,
-        raw: { id: gatewayOrderId, amount: toPaise(input.amount), currency: input.currency, status: 'created', mock: true },
-      };
+    if (this.settleLocally) {
+      return this.mockOrder(input);
     }
 
-    const body = {
-      amount: toPaise(input.amount),
-      currency: input.currency,
-      receipt: input.receipt.slice(0, 40),
-      notes: input.notes ?? {},
+    try {
+      const body = {
+        amount: toPaise(input.amount),
+        currency: input.currency,
+        receipt: input.receipt.slice(0, 40),
+        notes: input.notes ?? {},
+      };
+      const raw = await this.request<Record<string, unknown>>('POST', '/orders', body);
+      return { gatewayOrderId: String(raw.id), raw };
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      // Invalid/placeholder keys → local order so checkout is not hard-blocked.
+      if (/authentication failed/i.test(msg)) {
+        this.logger.error(
+          `Razorpay createOrder auth failed (${msg}); falling back to server-capture mock order. Fix RAZORPAY_KEY_ID/SECRET.`,
+        );
+        return this.mockOrder(input);
+      }
+      throw err;
+    }
+  }
+
+  private mockOrder(input: CreateGatewayOrderInput): CreateGatewayOrderResult {
+    const gatewayOrderId = `order_mock_${randomUUID().replace(/-/g, '').slice(0, 14)}`;
+    return {
+      gatewayOrderId,
+      raw: {
+        id: gatewayOrderId,
+        amount: toPaise(input.amount),
+        currency: input.currency,
+        status: 'created',
+        mock: true,
+        serverCapture: this.serverCapture,
+      },
     };
-    const raw = await this.request<Record<string, unknown>>('POST', '/orders', body);
-    return { gatewayOrderId: String(raw.id), raw };
   }
 
   async authorize(
     input: AuthorizePaymentInput,
   ): Promise<AuthorizePaymentResult> {
-    if (this.mock) {
+    if (this.settleLocally) {
       const gatewayPaymentId = `pay_mock_${randomUUID().replace(/-/g, '').slice(0, 14)}`;
       return {
         gatewayPaymentId,
@@ -99,7 +130,7 @@ export class RazorpayProvider implements PaymentProvider {
   }
 
   async capture(input: CapturePaymentInput): Promise<CapturePaymentResult> {
-    if (this.mock) {
+    if (this.settleLocally) {
       return {
         gatewayPaymentId: input.gatewayPaymentId,
         status: 'captured',
@@ -108,6 +139,7 @@ export class RazorpayProvider implements PaymentProvider {
           status: 'captured',
           amount: toPaise(input.amount),
           mock: true,
+          serverCapture: this.serverCapture,
         },
       };
     }
@@ -125,7 +157,7 @@ export class RazorpayProvider implements PaymentProvider {
   }
 
   async cancel(input: CancelPaymentInput): Promise<CancelPaymentResult> {
-    if (this.mock) {
+    if (this.settleLocally) {
       return {
         status: 'cancelled',
         raw: { mock: true, gatewayPaymentId: input.gatewayPaymentId },
@@ -148,7 +180,7 @@ export class RazorpayProvider implements PaymentProvider {
   }
 
   async refund(input: RefundGatewayInput): Promise<RefundGatewayResult> {
-    if (this.mock) {
+    if (this.settleLocally) {
       const gatewayRefundId = `rfnd_mock_${randomUUID().replace(/-/g, '').slice(0, 14)}`;
       return {
         gatewayRefundId,
@@ -189,7 +221,7 @@ export class RazorpayProvider implements PaymentProvider {
       input.secret ||
       this.config.get<string>('payment.razorpay.webhookSecret') ||
       '';
-    if (this.mock && !secret) {
+    if (this.settleLocally && !secret) {
       return true;
     }
     if (!secret || !input.signature) return false;

@@ -5,6 +5,7 @@ describe('RazorpayProvider (mock)', () => {
   const config = {
     get: (key: string) => {
       if (key === 'payment.mock') return true;
+      if (key === 'payment.serverCapture') return true;
       if (key === 'payment.razorpay.keyId') return '';
       if (key === 'payment.razorpay.keySecret') return '';
       if (key === 'payment.razorpay.webhookSecret') return 'whsec';
@@ -66,5 +67,35 @@ describe('RazorpayProvider (mock)', () => {
         secret: 'whsec',
       }),
     ).toBe(false);
+  });
+});
+
+describe('RazorpayProvider (server capture, live keys flag off)', () => {
+  const config = {
+    get: (key: string) => {
+      if (key === 'payment.mock') return false;
+      if (key === 'payment.serverCapture') return true;
+      if (key === 'payment.razorpay.keyId') return 'rzp_test_x';
+      if (key === 'payment.razorpay.keySecret') return 'secretsecret';
+      if (key === 'payment.razorpay.webhookSecret') return 'whsec_secret';
+      return undefined;
+    },
+  };
+
+  const provider = new RazorpayProvider(config as never);
+
+  it('settles locally without calling Razorpay', async () => {
+    const order = await provider.createOrder({
+      amount: 250,
+      currency: 'INR',
+      receipt: 'ord_server',
+    });
+    expect(order.gatewayOrderId).toMatch(/^order_mock_/);
+    const auth = await provider.authorize({
+      gatewayOrderId: order.gatewayOrderId,
+      amount: 250,
+      currency: 'INR',
+    });
+    expect(auth.status).toBe('authorized');
   });
 });

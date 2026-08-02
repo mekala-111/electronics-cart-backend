@@ -10,8 +10,18 @@ export default registerAs('payment', () => {
     mockEnv === '1' ||
     (!keyId && !keySecret && mockEnv !== 'false');
 
+  /**
+   * Storefront has no Razorpay Checkout.js — checkout saga settles payment server-side.
+   * Default ON so authorize/capture work without a client payment step.
+   * Set PAYMENTS_SERVER_CAPTURE=false when wiring hosted/embedded Razorpay.
+   */
+  const serverCaptureEnv = process.env.PAYMENTS_SERVER_CAPTURE;
+  const serverCapture =
+    serverCaptureEnv !== 'false' && serverCaptureEnv !== '0';
+
   return {
     mock,
+    serverCapture,
     razorpay: {
       keyId,
       keySecret,

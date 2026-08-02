@@ -56,7 +56,7 @@ add('product questions', 'GET', `/catalog/products/${PRODUCT_ID}/questions`, [20
 add('get cart', 'GET', `/cart?sessionKey=${SESSION}`, 200, {
   headers: { 'X-Session-Key': SESSION },
 });
-add('add cart item', 'POST', `/cart/items?sessionKey=${SESSION}`, [200, 400, 404], {
+add('add cart item', 'POST', `/cart/items?sessionKey=${SESSION}`, [200, 201, 400, 404], {
   body: { variantId: VARIANT_ID, quantity: 1 },
   headers: { 'X-Session-Key': SESSION },
 });
