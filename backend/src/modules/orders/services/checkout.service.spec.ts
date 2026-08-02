@@ -97,6 +97,14 @@ describe('CheckoutService saga wiring', () => {
     invalidateOrder: jest.fn(),
   };
 
+  const config = {
+    get: (key: string) => {
+      if (key === 'payment.mock') return true;
+      if (key === 'payment.serverCapture') return true;
+      return undefined;
+    },
+  };
+
   const service = new CheckoutService(
     carts as never,
     cartRepo as never,
@@ -108,6 +116,7 @@ describe('CheckoutService saga wiring', () => {
     locks as never,
     events as never,
     cache as never,
+    config as never,
   );
 
   it('runs checkout through lock + saga', async () => {

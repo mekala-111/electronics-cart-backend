@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { AppException } from '../../../core/errors/app.exception';
 import { ErrorCodes } from '../../../core/errors/error-codes';
 import { InventoryService } from '../../inventory/services/inventory.service';
@@ -36,7 +37,16 @@ export class CheckoutService {
     private readonly locks: LockService,
     private readonly events: OrdersEventPublisher,
     private readonly cache: OrdersCacheService,
+    private readonly config: ConfigService,
   ) {}
+
+  /** Soft-launch: settle in-saga. Live Checkout.js: leave pending for client pay. */
+  private get autoSettlePayment(): boolean {
+    return (
+      this.config.get<boolean>('payment.mock') === true ||
+      this.config.get<boolean>('payment.serverCapture') !== false
+    );
+  }
 
   async checkout(userId: string, dto: CheckoutDto) {
     return this.locks.withLock(
@@ -299,11 +309,12 @@ export class CheckoutService {
           timeoutMs: 30_000,
           retry: { maxAttempts: 2, delayMs: 200 },
           execute: async (ctx) => {
+            if (!this.autoSettlePayment) return {};
             await this.payments.authorize(ctx.paymentId!, ctx.userId);
             return {};
           },
           compensate: async (ctx) => {
-            if (!ctx.paymentId) return;
+            if (!this.autoSettlePayment || !ctx.paymentId) return;
             await this.payments.voidOrCancel(ctx.paymentId, ctx.userId);
           },
         },
@@ -312,11 +323,12 @@ export class CheckoutService {
           timeoutMs: 30_000,
           retry: { maxAttempts: 2, delayMs: 200 },
           execute: async (ctx) => {
+            if (!this.autoSettlePayment) return {};
             await this.payments.capture(ctx.paymentId!, ctx.userId);
             return {};
           },
           compensate: async (ctx) => {
-            if (!ctx.paymentId) return;
+            if (!this.autoSettlePayment || !ctx.paymentId) return;
             try {
               await this.payments.voidOrCancel(ctx.paymentId, ctx.userId);
             } catch {
@@ -329,6 +341,7 @@ export class CheckoutService {
           name: 'confirm_order',
           timeoutMs: 15_000,
           execute: async (ctx) => {
+            if (!this.autoSettlePayment) return {};
             if (!ctx.reservationIds?.length) {
               throw new Error('Inventory reservation required before confirmation');
             }
@@ -351,7 +364,7 @@ export class CheckoutService {
             return {};
           },
           compensate: async (ctx) => {
-            if (!ctx.orderId) return;
+            if (!this.autoSettlePayment || !ctx.orderId) return;
             await this.orders.transitionStatus(
               ctx.orderId,
               'confirmed',

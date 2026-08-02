@@ -4,6 +4,7 @@ import {
   Injectable,
   Logger,
 } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { PaymentStatus } from '@prisma/client';
 import { AppException } from '../../../core/errors/app.exception';
 import { ErrorCodes } from '../../../core/errors/error-codes';
@@ -46,8 +47,17 @@ export class PaymentsService {
     private readonly locks: LockService,
     private readonly events: PaymentsEventPublisher,
     private readonly queues: QueueService,
+    private readonly config: ConfigService,
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
   ) {}
+
+  /** Client Checkout.js path — saga left order pending until capture. */
+  private get needsPostCaptureOrderConfirm(): boolean {
+    return (
+      this.config.get<boolean>('payment.mock') !== true &&
+      this.config.get<boolean>('payment.serverCapture') === false
+    );
+  }
 
   /** Saga entry: create + return paymentId for subsequent authorize/capture. */
   async createForCheckout(input: {
@@ -349,6 +359,13 @@ export class PaymentsService {
             gateway: this.provider.code,
           }),
         );
+
+        if (this.needsPostCaptureOrderConfirm) {
+          await this.confirmPendingOrderAfterCapture(
+            payment.order_id,
+            actorId,
+          );
+        }
 
         await this.queues.enqueue(
           QUEUE_NAMES.PAYMENTS,
@@ -655,6 +672,51 @@ export class PaymentsService {
       throw new AppException(ErrorCodes.NOT_FOUND, 'Payment not found', 404);
     }
     return payment;
+  }
+
+  /** ponytail: inline order confirm to avoid Orders↔Payments cycle; risk score stays saga-only. */
+  private async confirmPendingOrderAfterCapture(
+    orderId: string,
+    actorId: string,
+  ) {
+    const order = await this.repo.client.order.findFirst({
+      where: { id: orderId, deleted_at: null },
+      select: { id: true, status: true, cart_id: true },
+    });
+    if (!order || order.status !== 'pending') return;
+
+    try {
+      await this.repo.client.$transaction(async (tx) => {
+        await tx.order.update({
+          where: { id: orderId },
+          data: {
+            status: 'confirmed',
+            placed_at: new Date(),
+            updated_by: actorId,
+          },
+        });
+        await tx.orderStatusHistory.create({
+          data: {
+            order_id: orderId,
+            from_status: 'pending',
+            to_status: 'confirmed',
+            note: 'Payment captured',
+            created_by: actorId,
+            updated_by: actorId,
+          },
+        });
+        if (order.cart_id) {
+          await tx.cart.update({
+            where: { id: order.cart_id },
+            data: { status: 'converted' },
+          });
+        }
+      });
+    } catch (err) {
+      this.logger.error(
+        `confirmPendingOrderAfterCapture failed for ${orderId}: ${String(err)}`,
+      );
+    }
   }
 
   private assertCanAccess(customerId: string | null | undefined, actorId: string) {

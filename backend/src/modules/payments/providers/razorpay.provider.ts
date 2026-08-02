@@ -38,7 +38,7 @@ export class RazorpayProvider implements PaymentProvider {
       'https://api.razorpay.com/v1';
   }
 
-  /** Mock settlement: PAYMENTS_MOCK or server-side capture (no Checkout.js). */
+  /** Mock authorize/capture when PAYMENTS_MOCK or soft-launch server capture. */
   private get settleLocally(): boolean {
     return this.mock || this.serverCapture;
   }
@@ -46,7 +46,9 @@ export class RazorpayProvider implements PaymentProvider {
   async createOrder(
     input: CreateGatewayOrderInput,
   ): Promise<CreateGatewayOrderResult> {
-    if (this.settleLocally) {
+    // Soft-launch server capture still uses local order ids (no Checkout.js).
+    // Real Checkout.js requires a live Razorpay order — set PAYMENTS_SERVER_CAPTURE=false.
+    if (this.mock || this.serverCapture) {
       return this.mockOrder(input);
     }
 
@@ -61,10 +63,9 @@ export class RazorpayProvider implements PaymentProvider {
       return { gatewayOrderId: String(raw.id), raw };
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
-      // Invalid/placeholder keys → local order so checkout is not hard-blocked.
       if (/authentication failed/i.test(msg)) {
         this.logger.error(
-          `Razorpay createOrder auth failed (${msg}); falling back to server-capture mock order. Fix RAZORPAY_KEY_ID/SECRET.`,
+          `Razorpay createOrder auth failed (${msg}); falling back to mock order. Fix RAZORPAY_KEY_ID/SECRET.`,
         );
         return this.mockOrder(input);
       }
@@ -141,6 +142,18 @@ export class RazorpayProvider implements PaymentProvider {
           mock: true,
           serverCapture: this.serverCapture,
         },
+      };
+    }
+
+    const existing = await this.request<Record<string, unknown>>(
+      'GET',
+      `/payments/${encodeURIComponent(input.gatewayPaymentId)}`,
+    );
+    if (String(existing.status) === 'captured') {
+      return {
+        gatewayPaymentId: String(existing.id),
+        status: 'captured',
+        raw: existing,
       };
     }
 

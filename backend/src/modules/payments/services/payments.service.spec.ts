@@ -92,6 +92,13 @@ describe('PaymentsService', () => {
       cancelled: jest.fn(),
     };
     const queues = { enqueue: jest.fn() };
+    const config = {
+      get: (key: string) => {
+        if (key === 'payment.mock') return true;
+        if (key === 'payment.serverCapture') return true;
+        return undefined;
+      },
+    };
 
     const svc = new PaymentsService(
       repo as never,
@@ -99,6 +106,7 @@ describe('PaymentsService', () => {
       locks as never,
       events as never,
       queues as never,
+      config as never,
       provider as never,
     );
     return { svc, repo, provider, events };

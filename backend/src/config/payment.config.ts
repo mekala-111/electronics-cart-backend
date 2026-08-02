@@ -11,9 +11,8 @@ export default registerAs('payment', () => {
     (!keyId && !keySecret && mockEnv !== 'false');
 
   /**
-   * Storefront has no Razorpay Checkout.js — checkout saga settles payment server-side.
-   * Default ON so authorize/capture work without a client payment step.
-   * Set PAYMENTS_SERVER_CAPTURE=false when wiring hosted/embedded Razorpay.
+   * Soft-launch: saga creates mock gateway orders and settles authorize/capture locally.
+   * Default ON. Set PAYMENTS_SERVER_CAPTURE=false for live Razorpay orders + Checkout.js.
    */
   const serverCaptureEnv = process.env.PAYMENTS_SERVER_CAPTURE;
   const serverCapture =
