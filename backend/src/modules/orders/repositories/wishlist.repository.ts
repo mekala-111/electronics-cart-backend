@@ -22,8 +22,28 @@ export class WishlistRepository {
     });
   }
 
-  /** Raw upsert — seed variant UUIDs are not always RFC v4 (Prisma write validation). */
+  /** Select-then-write — partial unique index + seed UUID-shaped variant ids. */
   async addItem(wishlistId: string, variantId: string) {
+    const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id::text AS id
+      FROM wishlist_items
+      WHERE wishlist_id = ${wishlistId}::uuid
+        AND variant_id = ${variantId}::uuid
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (existing[0]?.id) {
+      await this.prisma.$executeRaw`
+        UPDATE wishlist_items SET
+          deleted_at = NULL,
+          status = 'active'::record_status,
+          updated_at = NOW()
+        WHERE id = ${existing[0].id}::uuid
+      `;
+      return;
+    }
+
     await this.prisma.$executeRaw`
       INSERT INTO wishlist_items (
         id, wishlist_id, variant_id, status, created_at, updated_at, deleted_at
@@ -34,10 +54,6 @@ export class WishlistRepository {
         'active'::record_status,
         NOW(), NOW(), NULL
       )
-      ON CONFLICT (wishlist_id, variant_id) DO UPDATE SET
-        deleted_at = NULL,
-        status = 'active'::record_status,
-        updated_at = NOW()
     `;
   }
 

@@ -42,7 +42,6 @@ export class CartRepository {
       data: {
         user_id: data.userId,
         session_key: data.sessionKey,
-        // Avoid FK errors when actorId is missing / non-user
         created_by: data.actorId,
         updated_by: data.actorId,
       },
@@ -51,8 +50,10 @@ export class CartRepository {
   }
 
   /**
-   * Upsert via SQL so seed UUID-shaped ids (non-RFC version) still write.
-   * Prisma Client Uuid validation rejects version-0 seed primary keys on write.
+   * Select-then-write via SQL.
+   * - Seed UUIDs are version-0 (Prisma Client write validation rejects them).
+   * - DB unique is partial: uq_cart_items_cart_variant_active WHERE deleted_at IS NULL
+   *   so ON CONFLICT (cart_id, variant_id) alone fails with 42P10.
    */
   async upsertItem(
     cartId: string,
@@ -61,6 +62,29 @@ export class CartRepository {
     unitPrice: number,
     actorId?: string,
   ) {
+    const existing = await this.prisma.$queryRaw<Array<{ id: string }>>`
+      SELECT id::text AS id
+      FROM cart_items
+      WHERE cart_id = ${cartId}::uuid
+        AND variant_id = ${variantId}::uuid
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+
+    if (existing[0]?.id) {
+      await this.prisma.$executeRaw`
+        UPDATE cart_items SET
+          quantity = ${quantity},
+          unit_price = ${unitPrice},
+          deleted_at = NULL,
+          status = 'active'::record_status,
+          updated_at = NOW(),
+          updated_by = ${actorId ?? null}::uuid
+        WHERE id = ${existing[0].id}::uuid
+      `;
+      return;
+    }
+
     await this.prisma.$executeRaw`
       INSERT INTO cart_items (
         id, cart_id, variant_id, quantity, unit_price, status,
@@ -76,13 +100,6 @@ export class CartRepository {
         ${actorId ?? null}::uuid,
         ${actorId ?? null}::uuid
       )
-      ON CONFLICT (cart_id, variant_id) DO UPDATE SET
-        quantity = EXCLUDED.quantity,
-        unit_price = EXCLUDED.unit_price,
-        deleted_at = NULL,
-        status = 'active'::record_status,
-        updated_at = NOW(),
-        updated_by = EXCLUDED.updated_by
     `;
   }
 
