@@ -46,9 +46,7 @@ export class OrdersService {
 
   getOrder(idOrNumber: string, customerId?: string) {
     return this.cache.getOrSet(ORDERS_CACHE.order(idOrNumber), async () => {
-      const order =
-        (await this.orders.findById(idOrNumber)) ??
-        (await this.orders.findByNumber(idOrNumber));
+      const order = await this.orders.findByIdOrNumber(idOrNumber);
       if (!order) throw new AppException(ErrorCodes.NOT_FOUND, 'Order not found', 404);
       if (customerId && order.customer_id && order.customer_id !== customerId) {
         throw new AppException(ErrorCodes.FORBIDDEN, 'Order access denied', 403);

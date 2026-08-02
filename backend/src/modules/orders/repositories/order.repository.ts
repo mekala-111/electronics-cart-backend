@@ -31,6 +31,19 @@ export class OrderRepository {
     });
   }
 
+  /** UUID → by id; otherwise order_number (e.g. ORD-…). */
+  findByIdOrNumber(idOrNumber: string) {
+    const key = idOrNumber.trim();
+    if (
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        key,
+      )
+    ) {
+      return this.findById(key);
+    }
+    return this.findByNumber(key);
+  }
+
   listByCustomer(customerId: string, take = 20) {
     return this.prisma.order.findMany({
       where: { customer_id: customerId, deleted_at: null },
