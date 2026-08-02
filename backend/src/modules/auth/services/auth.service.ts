@@ -1,4 +1,4 @@
-import { HttpStatus, Injectable } from '@nestjs/common';
+import { HttpStatus, Injectable, Logger } from '@nestjs/common';
 import {
   AuthProvider,
   OtpChannel,
@@ -53,6 +53,8 @@ export interface LoginResponse extends AuthTokensResponse {
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     private readonly userRepository: UserRepository,
     private readonly roleRepository: RoleRepository,
@@ -230,6 +232,26 @@ export class AuthService {
     idToken: string,
     meta: RequestMeta,
   ): Promise<LoginResponse> {
+    try {
+      return await this.loginWithFirebaseInner(idToken, meta);
+    } catch (err) {
+      if (err instanceof AppException) throw err;
+      this.logger.error(
+        `loginWithFirebase failed: ${err instanceof Error ? err.message : String(err)}`,
+        err instanceof Error ? err.stack : undefined,
+      );
+      throw new AppException(
+        ErrorCodes.INTERNAL_ERROR,
+        err instanceof Error ? err.message : 'Firebase login failed',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  private async loginWithFirebaseInner(
+    idToken: string,
+    meta: RequestMeta,
+  ): Promise<LoginResponse> {
     const identity = await this.firebaseAuth.verifyIdToken(idToken);
     const provider = this.mapFirebaseProvider(identity.signInProvider);
 
@@ -255,21 +277,42 @@ export class AuthService {
     }
 
     if (!user) {
-      user = await this.userRepository.createFromSocial({
-        email: identity.email,
-        mobile: identity.phone,
-        authProvider: provider,
-        emailVerified: identity.emailVerified,
-        mobileVerified: Boolean(identity.phone),
-      });
-      await this.userRepository.assignRole(user.id, CUSTOMER_ROLE_ID);
-      this.authEventPublisher.userRegistered(
-        new UserRegisteredEvent({
-          userId: user.id,
-          email: user.email,
-          mobile: user.mobile,
-        }),
-      );
+      let created = false;
+      try {
+        user = await this.userRepository.createFromSocial({
+          email: identity.email,
+          mobile: identity.phone,
+          authProvider: provider,
+          emailVerified: identity.emailVerified,
+          mobileVerified: Boolean(identity.phone),
+        });
+        created = true;
+      } catch {
+        // Race / prior partial signup: email already exists
+        if (identity.email) {
+          user = await this.userRepository.findByEmail(identity.email);
+        }
+        if (!user && identity.phone) {
+          user = await this.userRepository.findByMobile(identity.phone);
+        }
+        if (!user) {
+          throw new AppException(
+            ErrorCodes.INTERNAL_ERROR,
+            'Could not create or link Firebase user',
+            HttpStatus.INTERNAL_SERVER_ERROR,
+          );
+        }
+      }
+      if (created) {
+        await this.userRepository.assignRole(user.id, CUSTOMER_ROLE_ID);
+        this.authEventPublisher.userRegistered(
+          new UserRegisteredEvent({
+            userId: user.id,
+            email: user.email,
+            mobile: user.mobile,
+          }),
+        );
+      }
     } else {
       await this.assertAccountAccessible(user);
       const patch: Record<string, unknown> = {
@@ -288,13 +331,18 @@ export class AuthService {
       user = await this.userRepository.update(user.id, patch);
     }
 
-    await this.userRepository.upsertOauth({
-      userId: user.id,
-      provider,
-      providerUserId: identity.uid,
-      email: identity.email,
-    });
-
+    // oauth_accounts CHECK only allows google|apple (not otp)
+    if (
+      provider === AuthProvider.google ||
+      provider === AuthProvider.apple
+    ) {
+      await this.userRepository.upsertOauth({
+        userId: user.id,
+        provider,
+        providerUserId: identity.uid,
+        email: identity.email,
+      });
+    }
     await this.userRepository.resetFailedLogin(user.id);
     await this.loginAttemptRepository.create({
       userId: user.id,

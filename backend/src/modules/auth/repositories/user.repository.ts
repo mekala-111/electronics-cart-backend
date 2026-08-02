@@ -89,43 +89,35 @@ export class UserRepository {
     });
   }
 
-  upsertOauth(data: {
+  async upsertOauth(data: {
     userId: string;
     provider: AuthProvider;
     providerUserId: string;
     email?: string | null;
   }) {
-    // ponytail: DB unique is partial (deleted_at IS NULL) — Prisma upsert ON CONFLICT can't use it.
-    return this.prisma.$transaction(async (tx) => {
-      const existing = await tx.oauthAccount.findFirst({
-        where: {
-          provider: data.provider,
-          provider_user_id: data.providerUserId,
-          deleted_at: null,
-        },
-      });
-      const email = data.email?.toLowerCase() ?? null;
-      if (existing) {
-        return tx.oauthAccount.update({
-          where: { id: existing.id },
-          data: {
-            user_id: data.userId,
-            email,
-            status: RecordStatus.active,
-            deleted_at: null,
-          },
-        });
-      }
-      return tx.oauthAccount.create({
-        data: {
-          user_id: data.userId,
-          provider: data.provider,
-          provider_user_id: data.providerUserId,
-          email,
-          status: RecordStatus.active,
-        },
-      });
-    });
+    // ponytail: unique is partial (deleted_at IS NULL) — Prisma upsert can't use it.
+    const email = data.email?.toLowerCase() ?? null;
+    await this.prisma.$executeRaw`
+      INSERT INTO oauth_accounts (
+        id, user_id, provider, provider_user_id, email,
+        status, created_at, updated_at, deleted_at
+      ) VALUES (
+        gen_random_uuid(),
+        ${data.userId}::uuid,
+        ${data.provider}::auth_provider,
+        ${data.providerUserId},
+        ${email},
+        'active'::record_status,
+        NOW(), NOW(), NULL
+      )
+      ON CONFLICT (provider, provider_user_id) WHERE deleted_at IS NULL
+      DO UPDATE SET
+        user_id = EXCLUDED.user_id,
+        email = EXCLUDED.email,
+        status = 'active'::record_status,
+        deleted_at = NULL,
+        updated_at = NOW()
+    `;
   }
 
   update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
