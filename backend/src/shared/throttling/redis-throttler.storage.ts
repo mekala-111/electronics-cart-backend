@@ -34,6 +34,28 @@ export class RedisThrottlerStorage implements ThrottlerStorage {
     blockDuration: number,
     _throttlerName: string,
   ): Promise<ThrottlerStorageRecord> {
+    try {
+      return await this.incrementRedis(key, ttl, limit, blockDuration);
+    } catch (err) {
+      // Fail-open: never 500 / hard-block traffic when Redis throttle backend is down
+      this.logger.warn(
+        `throttle fail-open: ${err instanceof Error ? err.message : String(err)}`,
+      );
+      return {
+        totalHits: 1,
+        timeToExpire: Math.max(1, Math.ceil(ttl / 1000)),
+        isBlocked: false,
+        timeToBlockExpire: 0,
+      };
+    }
+  }
+
+  private async incrementRedis(
+    key: string,
+    ttl: number,
+    limit: number,
+    blockDuration: number,
+  ): Promise<ThrottlerStorageRecord> {
     const redisKey = `${this.prefix}${key}`;
     const blockKey = `${redisKey}:block`;
     const ttlSec = Math.max(1, Math.ceil(ttl / 1000));
