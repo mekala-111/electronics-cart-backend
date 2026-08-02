@@ -1,5 +1,5 @@
 /**
- * PM2 ecosystem — API cluster + dedicated workers
+ * PM2 ecosystem — API + dedicated worker
  * Usage: pm2 start deployment/ecosystem.config.js --update-env
  */
 module.exports = {
@@ -8,15 +8,15 @@ module.exports = {
       name: 'ec-api',
       cwd: __dirname + '/..',
       script: 'dist/main.js',
-      // Cap instances — 'max' caused EADDRINUSE storms on aaPanel Node builds
-      instances: 2,
-      exec_mode: 'cluster',
+      instances: 1,
+      exec_mode: 'fork',
       env: {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'api',
         DISABLE_WORKERS: 'true',
         TRUST_PROXY: 'true',
         PORT: '3051',
+        HOST: '0.0.0.0',
       },
       env_production: {
         NODE_ENV: 'production',
@@ -24,11 +24,10 @@ module.exports = {
         DISABLE_WORKERS: 'true',
         TRUST_PROXY: 'true',
         PORT: '3051',
+        HOST: '0.0.0.0',
       },
       max_memory_restart: '1024M',
       kill_timeout: 10_000,
-      listen_timeout: 10_000,
-      wait_ready: false,
       exp_backoff_restart_delay: 200,
       node_args: '--max-old-space-size=1024',
       out_file: 'logs/api-out.log',
@@ -46,13 +45,11 @@ module.exports = {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'worker',
         DISABLE_WORKERS: 'false',
-        PORT: '3052',
       },
       env_production: {
         NODE_ENV: 'production',
         PROCESS_ROLE: 'worker',
         DISABLE_WORKERS: 'false',
-        PORT: '3052',
       },
       max_memory_restart: '1024M',
       kill_timeout: 30_000,
