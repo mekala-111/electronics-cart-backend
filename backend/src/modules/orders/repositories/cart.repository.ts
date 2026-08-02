@@ -4,7 +4,9 @@ import { PrismaService } from '../../../database/prisma.service';
 const cartInclude = {
   items: {
     where: { deleted_at: null },
-    include: { variant: true },
+    include: {
+      variant: true,
+    },
   },
 } as const;
 

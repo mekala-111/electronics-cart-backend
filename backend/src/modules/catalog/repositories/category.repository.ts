@@ -35,4 +35,18 @@ export class CategoryRepository {
       data: { deleted_at: new Date(), status: 'archived' },
     });
   }
+
+  /** Root → leaf path for product breadcrumbs (max 8 levels). */
+  async breadcrumb(categoryId: string): Promise<Category[]> {
+    const chain: Category[] = [];
+    let current = await this.findById(categoryId);
+    let guard = 0;
+    while (current && guard < 8) {
+      chain.unshift(current);
+      if (!current.parent_id) break;
+      current = await this.findById(current.parent_id);
+      guard += 1;
+    }
+    return chain;
+  }
 }

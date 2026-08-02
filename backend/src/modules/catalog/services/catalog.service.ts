@@ -142,11 +142,18 @@ export class CatalogService {
       if (!row || row.status !== 'active') {
         throw new AppException(ErrorCodes.NOT_FOUND, 'Product not found', 404);
       }
-      const [specs, media, videos, seo] = await Promise.all([
+      const [specs, media, videos, seo, reviews, related, breadcrumb] = await Promise.all([
         this.products.specifications(row.id),
         this.products.media(row.id),
         this.products.videos(row.id),
         this.aux.findSeo('product' as SeoEntityType, row.id, row.slug),
+        this.aux.listApprovedReviews(row.id),
+        this.products.search({
+          categoryId: row.category_id,
+          limit: 8,
+          page: 1,
+        }),
+        this.categories.breadcrumb(row.category_id),
       ]);
       return {
         ...mapProductDetail(row),
@@ -183,6 +190,24 @@ export class CatalogService {
         })),
         // ponytail: product_questions table not in DB v1.0 — empty until schema adds it
         questions: [] as unknown[],
+        reviews: reviews.map((r) => ({
+          id: r.id,
+          rating: r.rating,
+          title: r.title,
+          body: r.body,
+          helpfulCount: r.helpful_count,
+          verifiedPurchase: r.is_verified_purchase,
+          createdAt: r.created_at,
+        })),
+        relatedProducts: related.data
+          .filter((p) => p.id !== row.id)
+          .slice(0, 6)
+          .map(mapProductListItem),
+        breadcrumbs: breadcrumb.map((c) => ({
+          id: c.id,
+          name: c.name,
+          slug: c.slug,
+        })),
         seo: seo
           ? {
               metaTitle: seo.meta_title ?? row.seo_title,

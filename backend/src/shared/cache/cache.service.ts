@@ -10,9 +10,11 @@ export class CacheService implements OnModuleDestroy {
 
   constructor(private readonly config: ConfigService) {
     this.client = new Redis(this.config.getOrThrow<string>('redis.url'), {
-      maxRetriesPerRequest: 3,
+      maxRetriesPerRequest: 1,
       enableReadyCheck: true,
+      enableOfflineQueue: false,
       lazyConnect: false,
+      connectTimeout: 2000,
       retryStrategy: (times) => Math.min(times * 200, 2000),
     });
     // Prevent process crash on transient Redis downtime
@@ -37,47 +39,75 @@ export class CacheService implements OnModuleDestroy {
     return this.client.ping();
   }
 
+  /** Fail-open: Redis errors become cache miss. */
   async get<T>(key: string): Promise<T | null> {
-    const value = await this.client.get(key);
-    if (value === null) {
+    try {
+      const value = await this.client.get(key);
+      if (value === null) {
+        return null;
+      }
+      return JSON.parse(value) as T;
+    } catch (err) {
+      this.logger.warn(
+        `Redis get miss-open for ${key}: ${err instanceof Error ? err.message : String(err)}`,
+      );
       return null;
     }
-    return JSON.parse(value) as T;
   }
 
+  /** Fail-open: Redis write errors are logged; caller keeps the value. */
   async set<T>(
     key: string,
     value: T,
     ttlSeconds: number = CACHE_TTL.DEFAULT,
   ): Promise<void> {
-    const ttl = this.assertTtl(ttlSeconds);
-    await this.client.set(key, JSON.stringify(value), 'EX', ttl);
+    try {
+      const ttl = this.assertTtl(ttlSeconds);
+      await this.client.set(key, JSON.stringify(value), 'EX', ttl);
+    } catch (err) {
+      this.logger.warn(
+        `Redis set fail-open for ${key}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   async del(key: string): Promise<void> {
-    await this.client.del(key);
+    try {
+      await this.client.del(key);
+    } catch (err) {
+      this.logger.warn(
+        `Redis del fail-open for ${key}: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
   }
 
   async delByPrefix(prefix: string): Promise<number> {
-    let cursor = '0';
-    let deleted = 0;
+    try {
+      let cursor = '0';
+      let deleted = 0;
 
-    do {
-      const [nextCursor, keys] = await this.client.scan(
-        cursor,
-        'MATCH',
-        `${prefix}*`,
-        'COUNT',
-        100,
+      do {
+        const [nextCursor, keys] = await this.client.scan(
+          cursor,
+          'MATCH',
+          `${prefix}*`,
+          'COUNT',
+          100,
+        );
+        cursor = nextCursor;
+
+        if (keys.length > 0) {
+          deleted += await this.client.del(...keys);
+        }
+      } while (cursor !== '0');
+
+      return deleted;
+    } catch (err) {
+      this.logger.warn(
+        `Redis delByPrefix fail-open for ${prefix}: ${err instanceof Error ? err.message : String(err)}`,
       );
-      cursor = nextCursor;
-
-      if (keys.length > 0) {
-        deleted += await this.client.del(...keys);
-      }
-    } while (cursor !== '0');
-
-    return deleted;
+      return 0;
+    }
   }
 
   async getOrSet<T>(

@@ -137,4 +137,16 @@ export class CatalogAuxRepository {
       orderBy: { sort_order: 'asc' },
     });
   }
+
+  listApprovedReviews(productId: string) {
+    return this.prisma.productReview.findMany({
+      where: {
+        product_id: productId,
+        deleted_at: null,
+        status: 'active',
+      },
+      orderBy: { created_at: 'desc' },
+      take: 20,
+    });
+  }
 }

@@ -2,10 +2,11 @@ import { Cart, CartItem, Order, OrderItem, ProductVariant } from '@prisma/client
 
 export function mapCart(
   cart: Cart & {
-    items: (CartItem & { variant: ProductVariant })[];
+    items: (CartItem & { variant: ProductVariant | null })[];
   },
 ) {
-  const items = cart.items.filter((i) => !i.deleted_at);
+  // Soft-deleted / missing variants must never 500 the cart read path
+  const items = cart.items.filter((i) => !i.deleted_at && i.variant && !i.variant.deleted_at);
   const subtotal = items.reduce(
     (s, i) => s + Number(i.unit_price) * i.quantity,
     0,
@@ -20,7 +21,7 @@ export function mapCart(
     items: items.map((i) => ({
       id: i.id,
       variantId: i.variant_id,
-      sku: i.variant.sku,
+      sku: i.variant!.sku,
       quantity: i.quantity,
       unitPrice: Number(i.unit_price),
       lineTotal: Number(i.unit_price) * i.quantity,
