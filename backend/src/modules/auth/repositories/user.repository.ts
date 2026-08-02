@@ -146,19 +146,25 @@ export class UserRepository {
     });
   }
 
-  assignRole(userId: string, roleId: string): Promise<void> {
-    return this.prisma.userRole
-      .upsert({
-        where: {
-          user_id_role_id: { user_id: userId, role_id: roleId },
-        },
-        create: {
-          user_id: userId,
-          role_id: roleId,
-          status: RecordStatus.active,
-        },
-        update: { status: RecordStatus.active, deleted_at: null },
-      })
-      .then(() => undefined);
+  /**
+   * Seed role IDs are UUID-shaped but not RFC v4 — Prisma Client rejects them on write.
+   * Use SQL so FK to roles(id) still works.
+   */
+  async assignRole(userId: string, roleId: string): Promise<void> {
+    await this.prisma.$executeRaw`
+      INSERT INTO user_roles (
+        id, user_id, role_id, status, created_at, updated_at, deleted_at
+      ) VALUES (
+        gen_random_uuid(),
+        ${userId}::uuid,
+        ${roleId}::uuid,
+        'active'::record_status,
+        NOW(), NOW(), NULL
+      )
+      ON CONFLICT (user_id, role_id) DO UPDATE SET
+        status = 'active'::record_status,
+        deleted_at = NULL,
+        updated_at = NOW()
+    `;
   }
 }

@@ -195,6 +195,12 @@ export class AuthService {
       last_login_ip: meta.ipAddress,
     });
 
+    // Backfill customer role for accounts created before assignRole SQL fix
+    const roles = await this.roleRepository.getUserRoleCodes(user.id);
+    if (!roles.length) {
+      await this.userRepository.assignRole(user.id, CUSTOMER_ROLE_ID);
+    }
+
     await this.loginAttemptRepository.create({
       userId: user.id,
       identifier: input.identifier,
