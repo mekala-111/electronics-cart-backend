@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Full production deploy:
-# load .env → pull → install → build → migrate → reference seed → PM2 reload → health → rollback on failure
+# load .env → pull → install → build → migrate → reference seed → PM2 reload → health
+# Rollback only if build/migrate fails — not after a healthy PM2 start.
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
@@ -30,11 +31,10 @@ fi
 cleanup_on_fail() {
   local code=$?
   if [[ $code -ne 0 ]]; then
-    echo "[deploy] FAILED (exit $code) — attempting rollback" >&2
-    if [[ -n "${PREV_REV}" ]]; then
+    echo "[deploy] FAILED during build/migrate (exit $code) — attempting rollback" >&2
+    if [[ -n "${PREV_REV}" && "${PREV_REV}" != "$(git rev-parse HEAD 2>/dev/null || true)" ]]; then
       ./deployment/rollback.sh "${PREV_REV}" || true
     fi
-    # Always return to main so the next deploy is not stuck in detached HEAD
     if git rev-parse --abbrev-ref origin/main >/dev/null 2>&1; then
       git checkout -B main origin/main || true
     fi
@@ -44,9 +44,12 @@ cleanup_on_fail() {
 trap cleanup_on_fail EXIT
 
 ./deployment/pre-deploy.sh
+
+# Build + migrate succeeded — do not roll code back if PM2/health fails
+trap - EXIT
+
 echo "[deploy] reloading PM2..."
 pm2 startOrReload deployment/ecosystem.config.js --env production --update-env
 ./deployment/post-deploy.sh
 
-trap - EXIT
 echo "[deploy] success"
