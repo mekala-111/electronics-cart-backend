@@ -80,7 +80,12 @@ async function main() {
 
   const detail = await api('GET', '/catalog/products/macbook-air-m2-13');
   assert(detail.status === 200, `product detail ${detail.status} ${JSON.stringify(detail.json)}`);
-  console.log('OK product detail');
+  const variantId =
+    process.env.VARIANT_ID ||
+    detail.json?.data?.variants?.[0]?.id ||
+    VARIANT_ID;
+  assert(variantId, 'no variant id on product detail');
+  console.log('OK product detail', 'variant', variantId);
 
   const banners = await api('GET', '/banners');
   assert(banners.status === 200, `banners ${banners.status}`);
@@ -126,7 +131,7 @@ async function main() {
 
   const add = await api('POST', `/cart/items?sessionKey=${SESSION}`, {
     token,
-    body: { variantId: VARIANT_ID, quantity: 1 },
+    body: { variantId, quantity: 1 },
   });
   assert(ok2xx(add.status), `add cart ${add.status} ${JSON.stringify(add.json)}`);
   console.log('OK cart add');
@@ -140,7 +145,7 @@ async function main() {
 
   const wish = await api('POST', '/wishlist/items', {
     token,
-    body: { variantId: VARIANT_ID },
+    body: { variantId },
   });
   assert(ok2xx(wish.status), `wishlist ${wish.status} ${JSON.stringify(wish.json)}`);
   console.log('OK wishlist add');

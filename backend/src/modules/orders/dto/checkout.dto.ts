@@ -4,11 +4,11 @@ import {
   IsNumber,
   IsOptional,
   IsString,
-  IsUUID,
   MaxLength,
   Min,
   ValidateNested,
 } from 'class-validator';
+import { IsUuidString } from '../../../common/validators/is-uuid-string.validator';
 
 export class AddressDto {
   @ApiProperty()
@@ -56,7 +56,7 @@ export class AddressDto {
 export class CheckoutDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsUuidString()
   cartId?: string;
 
   @ApiPropertyOptional()
@@ -65,7 +65,7 @@ export class CheckoutDto {
   sessionKey?: string;
 
   @ApiProperty()
-  @IsUUID()
+  @IsUuidString()
   warehouseId!: string;
 
   @ApiProperty({ type: AddressDto })
@@ -95,7 +95,7 @@ export class CheckoutDto {
 export class CancelOrderDto {
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsUuidString()
   cancellationReasonId?: string;
 
   @ApiPropertyOptional()
@@ -106,7 +106,7 @@ export class CancelOrderDto {
 
 export class ReturnRequestDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUuidString()
   orderItemId!: string;
 
   @ApiProperty()
@@ -122,7 +122,7 @@ export class ReturnRequestDto {
 
 export class ExchangeRequestDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUuidString()
   orderItemId!: string;
 
   @ApiProperty({ enum: ['same_variant', 'different_variant', 'store_credit'] })
@@ -131,7 +131,7 @@ export class ExchangeRequestDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsUUID()
+  @IsUuidString()
   toVariantId?: string;
 
   @ApiPropertyOptional()
@@ -142,7 +142,7 @@ export class ExchangeRequestDto {
 
 export class CreateFulfillmentDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUuidString()
   warehouseId!: string;
 
   @ApiPropertyOptional({ type: [String] })
@@ -152,6 +152,6 @@ export class CreateFulfillmentDto {
 
 export class WishlistItemDto {
   @ApiProperty()
-  @IsUUID()
+  @IsUuidString()
   variantId!: string;
 }

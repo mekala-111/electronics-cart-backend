@@ -128,11 +128,26 @@ Expected steps: catalog → register/login (201/200) → me → refresh → cart
 | Ops scripts/docs | 8 | 10 |
 | **Total** | **~66** | **100 / 100** |
 
-**Backend is production-complete once VPS applies this commit and seed + E2E pass.**
+## Also fixed: seed UUID vs `@IsUUID()`
 
----
+Seed primary keys use UUID-**shaped** values with version nibble `0` (e.g. `37000000-0000-0000-0000-000000000001`).  
+`class-validator` `@IsUUID()` rejects those, so cart/wishlist/checkout returned `VALIDATION_ERROR` even when the variant existed.
 
-## Catalog route map (unchanged — frontend safe)
+**Fix:** order DTOs now use `@IsUuidString()` (shape check only). Request/response JSON unchanged; frontend compatible.
+
+## VPS apply
+
+```bash
+cd /www/wwwroot/electronics-cart-backend
+git pull --ff-only   # d2d9f23+ with UUID validator + seed order
+set -a && source backend/.env && set +a
+./database/scripts/seed-storefront.sh   # applies 008 enrichment + Dell inventory
+cd backend && ./deployment/deploy.sh
+
+BASE_URL=https://api.gdcd.online/api node ../postman/verify-apis.mjs
+BASE_URL=https://api.gdcd.online/api node ../postman/e2e-commerce.mjs
+```
+
 
 | Alias in briefs | Live path |
 |-----------------|-----------|
