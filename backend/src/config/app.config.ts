@@ -14,11 +14,14 @@ export default registerAs('app', () => {
     env,
     apiPrefix: 'api',
     corsOrigins,
+    firebaseProjectId:
+      process.env.FIREBASE_PROJECT_ID?.trim() || 'electronics-cart',
   } satisfies {
     name: string;
     port: number;
     env: AppEnv;
     apiPrefix: string;
     corsOrigins: string[];
+    firebaseProjectId: string;
   };
 });

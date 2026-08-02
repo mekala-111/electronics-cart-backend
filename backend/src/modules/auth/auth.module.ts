@@ -16,6 +16,7 @@ import { UserRepository } from './repositories/user.repository';
 import { AuditService } from './services/audit.service';
 import { AuthMailService } from './services/auth-mail.service';
 import { AuthService } from './services/auth.service';
+import { FirebaseAuthService } from './services/firebase-auth.service';
 import { OtpService } from './services/otp.service';
 import { PasswordService } from './services/password.service';
 import { SessionService } from './services/session.service';
@@ -44,6 +45,7 @@ import { TokenService } from './services/token.service';
     OtpService,
     AuditService,
     AuthMailService,
+    FirebaseAuthService,
     AuthService,
     AuthEventPublisher,
   ],

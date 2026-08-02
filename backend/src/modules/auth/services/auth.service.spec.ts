@@ -18,6 +18,7 @@ import { UserRepository } from '../repositories/user.repository';
 import { AuditService } from './audit.service';
 import { AuthMailService } from './auth-mail.service';
 import { AuthService } from './auth.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 import { OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
@@ -64,6 +65,9 @@ describe('AuthService', () => {
             findByIdentifier: jest.fn(),
             findById: jest.fn(),
             create: jest.fn(),
+            createFromSocial: jest.fn(),
+            findByOauth: jest.fn(),
+            upsertOauth: jest.fn(),
             update: jest.fn(),
             assignRole: jest.fn(),
             incrementFailedLogin: jest.fn(),
@@ -152,6 +156,12 @@ describe('AuthService', () => {
             passwordChanged: jest.fn(),
             emailVerified: jest.fn(),
             tokenReuseDetected: jest.fn(),
+          },
+        },
+        {
+          provide: FirebaseAuthService,
+          useValue: {
+            verifyIdToken: jest.fn(),
           },
         },
       ],

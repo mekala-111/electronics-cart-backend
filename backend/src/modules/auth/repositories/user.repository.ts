@@ -57,6 +57,67 @@ export class UserRepository {
     });
   }
 
+  createFromSocial(data: {
+    email?: string | null;
+    mobile?: string | null;
+    authProvider: AuthProvider;
+    emailVerified?: boolean;
+    mobileVerified?: boolean;
+  }): Promise<User> {
+    return this.prisma.user.create({
+      data: {
+        email: data.email?.toLowerCase() ?? null,
+        mobile: data.mobile ?? null,
+        password_hash: null,
+        user_type: UserType.customer,
+        auth_provider: data.authProvider,
+        status: RecordStatus.active,
+        email_verified_at: data.emailVerified ? new Date() : null,
+        mobile_verified_at: data.mobileVerified ? new Date() : null,
+      },
+    });
+  }
+
+  findByOauth(provider: AuthProvider, providerUserId: string) {
+    return this.prisma.oauthAccount.findFirst({
+      where: {
+        provider,
+        provider_user_id: providerUserId,
+        deleted_at: null,
+      },
+      include: { user: true },
+    });
+  }
+
+  upsertOauth(data: {
+    userId: string;
+    provider: AuthProvider;
+    providerUserId: string;
+    email?: string | null;
+  }) {
+    return this.prisma.oauthAccount.upsert({
+      where: {
+        provider_provider_user_id: {
+          provider: data.provider,
+          provider_user_id: data.providerUserId,
+        },
+      },
+      create: {
+        user_id: data.userId,
+        provider: data.provider,
+        provider_user_id: data.providerUserId,
+        email: data.email?.toLowerCase() ?? null,
+        status: RecordStatus.active,
+      },
+      update: {
+        user_id: data.userId,
+        email: data.email?.toLowerCase() ?? null,
+        status: RecordStatus.active,
+        deleted_at: null,
+      },
+    });
+  }
+
   update(id: string, data: Prisma.UserUpdateInput): Promise<User> {
     return this.prisma.user.update({
       where: { id },

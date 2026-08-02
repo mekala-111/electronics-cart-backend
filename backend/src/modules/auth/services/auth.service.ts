@@ -1,5 +1,6 @@
 import { HttpStatus, Injectable } from '@nestjs/common';
 import {
+  AuthProvider,
   OtpChannel,
   OtpPurpose,
   RecordStatus,
@@ -31,6 +32,7 @@ import { RoleRepository } from '../repositories/role.repository';
 import { UserRepository } from '../repositories/user.repository';
 import { AuditService } from './audit.service';
 import { AuthMailService } from './auth-mail.service';
+import { FirebaseAuthService } from './firebase-auth.service';
 import { OtpService } from './otp.service';
 import { PasswordService } from './password.service';
 import { SessionService } from './session.service';
@@ -63,6 +65,7 @@ export class AuthService {
     private readonly auditService: AuditService,
     private readonly authMailService: AuthMailService,
     private readonly authEventPublisher: AuthEventPublisher,
+    private readonly firebaseAuth: FirebaseAuthService,
   ) {}
 
   async register(
@@ -207,6 +210,109 @@ export class AuthService {
     });
 
     return response;
+  }
+
+  /**
+   * Exchange a verified Firebase ID token for Nest JWTs.
+   * Used after Google / phone OTP on the storefront.
+   */
+  async loginWithFirebase(
+    idToken: string,
+    meta: RequestMeta,
+  ): Promise<LoginResponse> {
+    const identity = await this.firebaseAuth.verifyIdToken(idToken);
+    const provider = this.mapFirebaseProvider(identity.signInProvider);
+
+    if (!identity.email && !identity.phone) {
+      throw new AppException(
+        ErrorCodes.VALIDATION_ERROR,
+        'Firebase account must have an email or phone number',
+        HttpStatus.BAD_REQUEST,
+      );
+    }
+
+    let user: User | null = null;
+    const oauth = await this.userRepository.findByOauth(provider, identity.uid);
+    if (oauth?.user && !oauth.user.deleted_at) {
+      user = oauth.user;
+    }
+
+    if (!user && identity.email) {
+      user = await this.userRepository.findByEmail(identity.email);
+    }
+    if (!user && identity.phone) {
+      user = await this.userRepository.findByMobile(identity.phone);
+    }
+
+    if (!user) {
+      user = await this.userRepository.createFromSocial({
+        email: identity.email,
+        mobile: identity.phone,
+        authProvider: provider,
+        emailVerified: identity.emailVerified,
+        mobileVerified: Boolean(identity.phone),
+      });
+      await this.userRepository.assignRole(user.id, CUSTOMER_ROLE_ID);
+      this.authEventPublisher.userRegistered(
+        new UserRegisteredEvent({
+          userId: user.id,
+          email: user.email,
+          mobile: user.mobile,
+        }),
+      );
+    } else {
+      await this.assertAccountAccessible(user);
+      const patch: Record<string, unknown> = {
+        last_login_at: new Date(),
+        last_login_ip: meta.ipAddress,
+      };
+      if (identity.emailVerified && !user.email_verified_at) {
+        patch.email_verified_at = new Date();
+      }
+      if (identity.phone && !user.mobile_verified_at) {
+        patch.mobile_verified_at = new Date();
+      }
+      if (user.status === RecordStatus.pending) {
+        patch.status = RecordStatus.active;
+      }
+      user = await this.userRepository.update(user.id, patch);
+    }
+
+    await this.userRepository.upsertOauth({
+      userId: user.id,
+      provider,
+      providerUserId: identity.uid,
+      email: identity.email,
+    });
+
+    await this.userRepository.resetFailedLogin(user.id);
+    await this.loginAttemptRepository.create({
+      userId: user.id,
+      identifier: identity.email ?? identity.phone ?? identity.uid,
+      ipAddress: meta.ipAddress,
+      userAgent: meta.userAgent,
+      success: true,
+    });
+
+    const response = await this.issueAuthResponse(user, meta);
+
+    await this.auditService.log('LOGIN_FIREBASE', {
+      entityId: user.id,
+      performedBy: user.id,
+      ipAddress: meta.ipAddress,
+      device: meta.userAgent,
+      requestId: meta.requestId,
+      newValues: { provider: identity.signInProvider },
+    });
+
+    return response;
+  }
+
+  private mapFirebaseProvider(signInProvider: string): AuthProvider {
+    if (signInProvider === 'phone') return AuthProvider.otp;
+    if (signInProvider === 'google.com') return AuthProvider.google;
+    if (signInProvider === 'apple.com') return AuthProvider.apple;
+    return AuthProvider.google;
   }
 
   async refresh(refreshToken: string): Promise<AuthTokensResponse> {
