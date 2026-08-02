@@ -62,6 +62,8 @@ async function bootstrap() {
           }
         : false,
       crossOriginEmbedderPolicy: false,
+      // Storefront calls this API from another origin; default CORP same-origin breaks that.
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
       hsts: prodLike
         ? { maxAge: hstsMaxAge, includeSubDomains: true, preload: true }
         : false,
