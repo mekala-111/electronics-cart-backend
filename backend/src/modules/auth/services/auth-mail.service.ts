@@ -44,9 +44,18 @@ export class AuthMailService {
 
     try {
       await this.mailQueueHelper.enqueueEmail(`auth.${template}`, payload);
+      return;
     } catch {
       this.logger.warn(`Queue unavailable for ${template}; sending synchronously`);
+    }
+
+    try {
       await this.mailService.sendMail(payload);
+    } catch (err) {
+      // Never fail auth flows because SMTP is misconfigured (common on soft-launch).
+      this.logger.error(
+        `Failed to send ${template} to ${to}: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
   }
 }

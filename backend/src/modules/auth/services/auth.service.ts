@@ -137,13 +137,17 @@ export class AuthService {
     );
 
     if (user.email) {
-      const { code } = await this.otpService.issueOtp(
-        user.email,
-        OtpChannel.email,
-        OtpPurpose.verify_email,
-        user.id,
-      );
-      await this.authMailService.sendVerificationEmail(user.email, code);
+      try {
+        const { code } = await this.otpService.issueOtp(
+          user.email,
+          OtpChannel.email,
+          OtpPurpose.verify_email,
+          user.id,
+        );
+        await this.authMailService.sendVerificationEmail(user.email, code);
+      } catch {
+        // OTP/mail must not block account creation + login tokens.
+      }
     }
 
     return this.createAuthResponse(user, meta).then(({ sessionId: _s, ...rest }) => rest);
