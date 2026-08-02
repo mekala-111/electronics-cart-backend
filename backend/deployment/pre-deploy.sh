@@ -11,30 +11,59 @@ if [[ -f "$ROOT/.env" ]]; then
   set +a
 fi
 
-# Prefer pnpm; bootstrap via corepack or npm if missing
+# Prefer pnpm; bootstrap via corepack/npm and resolve global bin onto PATH
 ensure_pnpm() {
+  add_npm_global_bin() {
+    local prefix bin
+    prefix="$(npm prefix -g 2>/dev/null || true)"
+    bin="$(npm bin -g 2>/dev/null || true)"
+    if [[ -n "$bin" && -d "$bin" ]]; then
+      export PATH="$bin:$PATH"
+    elif [[ -n "$prefix" && -d "$prefix/bin" ]]; then
+      export PATH="$prefix/bin:$PATH"
+    fi
+  }
+
   if command -v pnpm >/dev/null 2>&1; then
     return 0
   fi
+
   if command -v corepack >/dev/null 2>&1; then
     echo "[pre-deploy] enabling pnpm via corepack..."
     corepack enable || true
     corepack prepare pnpm@9.15.9 --activate || true
   fi
+
   if command -v pnpm >/dev/null 2>&1; then
     return 0
   fi
-  if command -v npm >/dev/null 2>&1; then
-    echo "[pre-deploy] installing pnpm@9 via npm -g..."
-    npm install -g pnpm@9.15.9
+
+  if ! command -v npm >/dev/null 2>&1; then
+    echo "[pre-deploy] neither pnpm nor npm found" >&2
+    exit 1
   fi
+
+  add_npm_global_bin
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo "[pre-deploy] installing pnpm@9 via npm -g..."
+  npm install -g pnpm@9.15.9
+  add_npm_global_bin
+
   if ! command -v pnpm >/dev/null 2>&1; then
-    echo "[pre-deploy] pnpm not found — install Node 18+ with npm, then: npm i -g pnpm@9" >&2
+    echo "[pre-deploy] pnpm still not on PATH after npm install -g" >&2
+    echo "[pre-deploy] npm prefix -g: $(npm prefix -g 2>/dev/null || echo unknown)" >&2
+    echo "[pre-deploy] npm bin -g: $(npm bin -g 2>/dev/null || echo unknown)" >&2
+    echo "[pre-deploy] which npm: $(command -v npm)" >&2
+    echo "[pre-deploy] try: export PATH=\"\$(npm prefix -g)/bin:\$PATH\"" >&2
     exit 1
   fi
 }
 
 ensure_pnpm
+echo "[pre-deploy] using pnpm $(pnpm -v) at $(command -v pnpm)"
 
 required=(DATABASE_URL REDIS_URL JWT_SECRET JWT_REFRESH_SECRET NODE_ENV)
 for k in "${required[@]}"; do

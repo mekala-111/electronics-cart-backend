@@ -15,19 +15,42 @@ if [[ -f "$ROOT/.env" ]]; then
   set +a
 fi
 
-if ! command -v pnpm >/dev/null 2>&1; then
+ensure_pnpm() {
+  add_npm_global_bin() {
+    local prefix bin
+    prefix="$(npm prefix -g 2>/dev/null || true)"
+    bin="$(npm bin -g 2>/dev/null || true)"
+    if [[ -n "$bin" && -d "$bin" ]]; then
+      export PATH="$bin:$PATH"
+    elif [[ -n "$prefix" && -d "$prefix/bin" ]]; then
+      export PATH="$prefix/bin:$PATH"
+    fi
+  }
+
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
   if command -v corepack >/dev/null 2>&1; then
     corepack enable || true
     corepack prepare pnpm@9.15.9 --activate || true
   fi
-  if ! command -v pnpm >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
-    npm install -g pnpm@9.15.9
+  if command -v pnpm >/dev/null 2>&1; then
+    return 0
+  fi
+  if command -v npm >/dev/null 2>&1; then
+    add_npm_global_bin
+    if ! command -v pnpm >/dev/null 2>&1; then
+      npm install -g pnpm@9.15.9
+      add_npm_global_bin
+    fi
   fi
   if ! command -v pnpm >/dev/null 2>&1; then
     echo "[rollback] pnpm not found" >&2
     exit 1
   fi
-fi
+}
+
+ensure_pnpm
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git checkout "$REV"
