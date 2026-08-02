@@ -1,7 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
-BASE="${HEALTH_BASE_URL:-http://127.0.0.1:3000/api}"
-curl -fsS "$BASE/health/db" >/dev/null
-curl -fsS "$BASE/health/redis" >/dev/null
-curl -fsS "$BASE/health/queues" >/dev/null || true
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+if [[ -f "$ROOT/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+fi
+PORT="${PORT:-3051}"
+BASE="${HEALTH_BASE_URL:-http://127.0.0.1:${PORT}/api}"
+echo "[verify] probing $BASE"
+curl -fsS --max-time 10 "$BASE/health/db" >/dev/null
+curl -fsS --max-time 10 "$BASE/health/redis" >/dev/null
+curl -fsS --max-time 10 "$BASE/health/queues" >/dev/null || true
 echo "[verify] dependency checks passed"
