@@ -17,12 +17,9 @@ fi
 
 ensure_pnpm() {
   add_npm_global_bin() {
-    local prefix bin
+    local prefix
     prefix="$(npm prefix -g 2>/dev/null || true)"
-    bin="$(npm bin -g 2>/dev/null || true)"
-    if [[ -n "$bin" && -d "$bin" ]]; then
-      export PATH="$bin:$PATH"
-    elif [[ -n "$prefix" && -d "$prefix/bin" ]]; then
+    if [[ -n "$prefix" && -d "$prefix/bin" ]]; then
       export PATH="$prefix/bin:$PATH"
     fi
   }
@@ -54,8 +51,16 @@ ensure_pnpm
 
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   git checkout "$REV"
-  pnpm install --frozen-lockfile
-  pnpm run build
+  if [[ -f pnpm-lock.yaml ]]; then
+    pnpm install --frozen-lockfile
+    pnpm run build
+  elif [[ -f package-lock.json ]]; then
+    npm ci
+    npm run build
+  else
+    pnpm install
+    pnpm run build
+  fi
 fi
 pm2 startOrReload deployment/ecosystem.config.js --env production --update-env
 ./deployment/health-check.sh

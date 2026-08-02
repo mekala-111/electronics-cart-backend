@@ -14,12 +14,9 @@ fi
 # Prefer pnpm; bootstrap via corepack/npm and resolve global bin onto PATH
 ensure_pnpm() {
   add_npm_global_bin() {
-    local prefix bin
+    local prefix
     prefix="$(npm prefix -g 2>/dev/null || true)"
-    bin="$(npm bin -g 2>/dev/null || true)"
-    if [[ -n "$bin" && -d "$bin" ]]; then
-      export PATH="$bin:$PATH"
-    elif [[ -n "$prefix" && -d "$prefix/bin" ]]; then
+    if [[ -n "$prefix" && -d "$prefix/bin" ]]; then
       export PATH="$prefix/bin:$PATH"
     fi
   }
@@ -55,7 +52,6 @@ ensure_pnpm() {
   if ! command -v pnpm >/dev/null 2>&1; then
     echo "[pre-deploy] pnpm still not on PATH after npm install -g" >&2
     echo "[pre-deploy] npm prefix -g: $(npm prefix -g 2>/dev/null || echo unknown)" >&2
-    echo "[pre-deploy] npm bin -g: $(npm bin -g 2>/dev/null || echo unknown)" >&2
     echo "[pre-deploy] which npm: $(command -v npm)" >&2
     echo "[pre-deploy] try: export PATH=\"\$(npm prefix -g)/bin:\$PATH\"" >&2
     exit 1
@@ -78,14 +74,29 @@ if [[ "${NODE_ENV}" != "production" && "${APP_ENV:-}" != "production" ]]; then
   echo "[pre-deploy] warning: NODE_ENV/APP_ENV is not production" >&2
 fi
 
+PKG_MGR="pnpm"
 echo "[pre-deploy] install..."
-pnpm install --frozen-lockfile
+if [[ -f pnpm-lock.yaml ]]; then
+  pnpm install --frozen-lockfile
+elif [[ -f package-lock.json ]]; then
+  echo "[pre-deploy] no pnpm-lock.yaml — using npm ci with package-lock.json"
+  PKG_MGR="npm"
+  npm ci
+else
+  echo "[pre-deploy] warning: no lockfile — running pnpm install" >&2
+  pnpm install
+fi
 
 echo "[pre-deploy] prisma generate..."
-pnpm exec prisma generate --schema ../database/schema.prisma
-
-echo "[pre-deploy] build..."
-pnpm run build
+if [[ "$PKG_MGR" == "npm" ]]; then
+  npx prisma generate --schema ../database/schema.prisma
+  echo "[pre-deploy] build..."
+  npm run build
+else
+  pnpm exec prisma generate --schema ../database/schema.prisma
+  echo "[pre-deploy] build..."
+  pnpm run build
+fi
 
 echo "[pre-deploy] validating environment (compiled)..."
 node -e "const { validateEnvironment } = require('./dist/config/env.validation'); validateEnvironment(process.env);"
