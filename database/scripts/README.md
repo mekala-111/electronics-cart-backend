@@ -1,14 +1,14 @@
 # Database verification framework
 
-Production-ready checks for locked Electronics Cart migrations (`database/sql/001`–`045`).
+Production-ready checks for locked Electronics Cart migrations (`database/sql/001`–`046`).
 
 ## Commands
 
 | Script | Purpose |
 |--------|---------|
 | `scripts/verify-all.sh` | Full suite + summary |
-| `scripts/verify-clean.sh` | Reset + 001→045 + Prisma |
-| `scripts/verify-forward.sh` | 001→020 then 021→045 |
+| `scripts/verify-clean.sh` | Reset + 001→046 + Prisma |
+| `scripts/verify-forward.sh` | 001→020 then 021→046 |
 | `scripts/verify-rollback.sh` | Checkpoint rollbacks |
 | `scripts/verify-seed.sh` | Seed anchors |
 | `scripts/verify-enums.sh` | Enum catalog |

@@ -113,7 +113,7 @@ async function main(): Promise<void> {
   lines.push(
     '',
     'Deploy path uses numbered SQL files under `database/sql/` (not Prisma migrate folders).',
-    'Forward migrations `001`–`045` must not contain `DROP TABLE` or `DROP COLUMN`.',
+    'Forward migrations `001`–`046` must not contain `DROP TABLE` or `DROP COLUMN`.',
   );
 
   writeReport('ProductionDryRun.md', lines.join('\n'));

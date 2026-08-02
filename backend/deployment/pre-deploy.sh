@@ -32,7 +32,7 @@ echo "[pre-deploy] database migrate + reference seeds..."
 (
   cd "${REPO}/database"
   export APPLY_DEMO_DATA=0
-  bash scripts/deploy-migrations.sh 045
+  bash scripts/deploy-migrations.sh 046
 )
 
 echo "[pre-deploy] ok"

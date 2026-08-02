@@ -1,6 +1,6 @@
 // Electronics Cart — PostgreSQL 16 + Prisma
-// Phases 1–9 APPROVED / LOCKED — Database v1.0
-// Deployment: SQL-first (database/sql/001–045); Prisma stays in sync via drift CI gate
+// Phases 1–9 APPROVED / LOCKED — Database v1.0 (+ 046 enum naming guard)
+// Deployment: SQL-first (database/sql/001–046); Prisma enums @@map to snake_case SQL types
 
 generator client {
   provider        = "prisma-client-js"
@@ -22,6 +22,9 @@ enum RecordStatus {
   suspended
   pending
   archived
+
+  @@map("record_status")
+
 }
 
 enum UserType {
@@ -31,6 +34,9 @@ enum UserType {
   technician
   support
   system
+
+  @@map("user_type")
+
 }
 
 enum AuthProvider {
@@ -38,6 +44,9 @@ enum AuthProvider {
   google
   apple
   otp
+
+  @@map("auth_provider")
+
 }
 
 enum OtpPurpose {
@@ -47,18 +56,27 @@ enum OtpPurpose {
   verify_email
   verify_mobile
   two_factor
+
+  @@map("otp_purpose")
+
 }
 
 enum OtpChannel {
   sms
   email
   whatsapp
+
+  @@map("otp_channel")
+
 }
 
 enum SessionStatus {
   active
   revoked
   expired
+
+  @@map("session_status")
+
 }
 
 enum TokenStatus {
@@ -66,6 +84,9 @@ enum TokenStatus {
   rotated
   revoked
   expired
+
+  @@map("token_status")
+
 }
 
 // ─────────────────────────────────────────────
@@ -395,6 +416,9 @@ enum StockStatus {
   preorder
   discontinued
   made_to_order
+
+  @@map("stock_status")
+
 }
 
 enum ProductCondition {
@@ -406,6 +430,9 @@ enum ProductCondition {
   open_box
   refurbished
   certified_refurbished
+
+  @@map("product_condition")
+
 }
 
 enum ProductGrade {
@@ -414,6 +441,9 @@ enum ProductGrade {
   b
   c
   ungraded
+
+  @@map("product_grade")
+
 }
 
 enum MediaKind {
@@ -421,6 +451,9 @@ enum MediaKind {
   video
   document
   other
+
+  @@map("media_kind")
+
 }
 
 enum RelatedProductType {
@@ -429,6 +462,9 @@ enum RelatedProductType {
   frequently_bought_together
   accessory
   alternative
+
+  @@map("related_product_type")
+
 }
 
 enum AttributeDataType {
@@ -436,6 +472,9 @@ enum AttributeDataType {
   number
   boolean
   enum_value
+
+  @@map("attribute_data_type")
+
 }
 
 // ─────────────────────────────────────────────
@@ -1024,12 +1063,18 @@ enum PurchaseOrderStatus {
   received
   closed
   cancelled
+
+  @@map("purchase_order_status")
+
 }
 
 enum GoodsReceiptStatus {
   draft
   posted
   cancelled
+
+  @@map("goods_receipt_status")
+
 }
 
 enum StockMovementType {
@@ -1046,6 +1091,9 @@ enum StockMovementType {
   reservation_release
   damage
   refurbish
+
+  @@map("stock_movement_type")
+
 }
 
 enum ReservationStatus {
@@ -1054,6 +1102,9 @@ enum ReservationStatus {
   expired
   released
   cancelled
+
+  @@map("reservation_status")
+
 }
 
 enum SerialNumberStatus {
@@ -1066,6 +1117,9 @@ enum SerialNumberStatus {
   damaged
   scrapped
   returned
+
+  @@map("serial_number_status")
+
 }
 
 enum WarrantyTrackStatus {
@@ -1075,6 +1129,9 @@ enum WarrantyTrackStatus {
   expired
   claimed
   voided
+
+  @@map("warranty_track_status")
+
 }
 
 enum RefurbishmentStatus {
@@ -1084,6 +1141,9 @@ enum RefurbishmentStatus {
   testing
   ready_for_sale
   rejected
+
+  @@map("refurbishment_status")
+
 }
 
 enum StockTransferStatus {
@@ -1091,6 +1151,9 @@ enum StockTransferStatus {
   in_transit
   received
   cancelled
+
+  @@map("stock_transfer_status")
+
 }
 
 enum AdjustmentReason {
@@ -1101,6 +1164,9 @@ enum AdjustmentReason {
   found
   correction
   other
+
+  @@map("adjustment_reason")
+
 }
 
 enum CycleCountStatus {
@@ -1108,6 +1174,9 @@ enum CycleCountStatus {
   in_progress
   completed
   cancelled
+
+  @@map("cycle_count_status")
+
 }
 
 enum LowStockAlertStatus {
@@ -1115,6 +1184,9 @@ enum LowStockAlertStatus {
   acknowledged
   resolved
   dismissed
+
+  @@map("low_stock_alert_status")
+
 }
 
 enum ReturnToStockSource {
@@ -1122,6 +1194,9 @@ enum ReturnToStockSource {
   warranty_replacement
   service_center
   open_box_inspection
+
+  @@map("return_to_stock_source")
+
 }
 
 enum ReturnToStockStatus {
@@ -1130,6 +1205,9 @@ enum ReturnToStockStatus {
   restocked
   rejected
   quarantined
+
+  @@map("return_to_stock_status")
+
 }
 
 // ─────────────────────────────────────────────
@@ -1836,11 +1914,17 @@ enum CartStatus {
   merged
   converted
   abandoned
+
+  @@map("cart_status")
+
 }
 
 enum CouponDiscountType {
   flat
   percentage
+
+  @@map("coupon_discount_type")
+
 }
 
 enum CouponRuleType {
@@ -1850,6 +1934,9 @@ enum CouponRuleType {
   max_discount
   usage_limit
   per_user_limit
+
+  @@map("coupon_rule_type")
+
 }
 
 enum OrderStatus {
@@ -1863,16 +1950,25 @@ enum OrderStatus {
   cancelled
   returned
   refunded
+
+  @@map("order_status")
+
 }
 
 enum AddressType {
   shipping
   billing
+
+  @@map("address_type")
+
 }
 
 enum OrderNoteVisibility {
   internal
   customer
+
+  @@map("order_note_visibility")
+
 }
 
 enum InvoiceStatus {
@@ -1880,6 +1976,9 @@ enum InvoiceStatus {
   issued
   cancelled
   credited
+
+  @@map("invoice_status")
+
 }
 
 enum ReturnStatus {
@@ -1891,12 +1990,18 @@ enum ReturnStatus {
   inspection
   refunded
   completed
+
+  @@map("return_status")
+
 }
 
 enum ExchangeType {
   same_variant
   different_variant
   store_credit
+
+  @@map("exchange_type")
+
 }
 
 enum ExchangeStatus {
@@ -1905,6 +2010,9 @@ enum ExchangeStatus {
   rejected
   fulfilled
   cancelled
+
+  @@map("exchange_status")
+
 }
 
 enum OrderEventType {
@@ -1919,6 +2027,9 @@ enum OrderEventType {
   exchange_requested
   invoice_issued
   other
+
+  @@map("order_event_type")
+
 }
 
 // ─────────────────────────────────────────────
@@ -2447,6 +2558,9 @@ enum WalletTxType {
   hold
   release
   adjust
+
+  @@map("wallet_tx_type")
+
 }
 
 enum StoreCreditSource {
@@ -2455,6 +2569,9 @@ enum StoreCreditSource {
   exchange_balance
   goodwill
   other
+
+  @@map("store_credit_source")
+
 }
 
 enum GiftCardStatus {
@@ -2462,6 +2579,9 @@ enum GiftCardStatus {
   redeemed
   expired
   voided
+
+  @@map("gift_card_status")
+
 }
 
 enum FulfillmentStatus {
@@ -2471,6 +2591,9 @@ enum FulfillmentStatus {
   shipped
   delivered
   cancelled
+
+  @@map("fulfillment_status")
+
 }
 
 enum PickListStatus {
@@ -2478,6 +2601,9 @@ enum PickListStatus {
   in_progress
   completed
   cancelled
+
+  @@map("pick_list_status")
+
 }
 
 enum PackingListStatus {
@@ -2485,6 +2611,9 @@ enum PackingListStatus {
   packed
   shipped
   cancelled
+
+  @@map("packing_list_status")
+
 }
 
 enum RiskLevel {
@@ -2492,6 +2621,9 @@ enum RiskLevel {
   medium
   high
   critical
+
+  @@map("risk_level")
+
 }
 
 model Wallet {
@@ -2782,6 +2914,9 @@ enum PaymentGatewayCode {
   phonepe
   cashfree
   internal
+
+  @@map("payment_gateway_code")
+
 }
 
 enum PaymentMethodCode {
@@ -2796,6 +2931,9 @@ enum PaymentMethodCode {
   gift_card
   cod
   other
+
+  @@map("payment_method_code")
+
 }
 
 enum PaymentStatus {
@@ -2808,6 +2946,9 @@ enum PaymentStatus {
   refunded
   partially_refunded
   chargeback
+
+  @@map("payment_status")
+
 }
 
 enum PaymentTxType {
@@ -2817,6 +2958,9 @@ enum PaymentTxType {
   refund
   settlement
   adjustment
+
+  @@map("payment_tx_type")
+
 }
 
 enum WebhookProcessingStatus {
@@ -2826,6 +2970,9 @@ enum WebhookProcessingStatus {
   failed
   ignored
   retrying
+
+  @@map("webhook_processing_status")
+
 }
 
 enum RefundStatus {
@@ -2835,11 +2982,17 @@ enum RefundStatus {
   processing
   processed
   failed
+
+  @@map("refund_status")
+
 }
 
 enum RefundType {
   full
   partial
+
+  @@map("refund_type")
+
 }
 
 enum SettlementStatus {
@@ -2847,6 +3000,9 @@ enum SettlementStatus {
   settled
   failed
   reversed
+
+  @@map("settlement_status")
+
 }
 
 enum ReconciliationStatus {
@@ -2855,6 +3011,9 @@ enum ReconciliationStatus {
   missing_gateway
   missing_internal
   unresolved
+
+  @@map("reconciliation_status")
+
 }
 
 enum DisputeStatus {
@@ -2863,11 +3022,17 @@ enum DisputeStatus {
   won
   lost
   withdrawn
+
+  @@map("dispute_status")
+
 }
 
 enum EmiType {
   bank_emi
   no_cost_emi
+
+  @@map("emi_type")
+
 }
 
 // ─────────────────────────────────────────────
@@ -3393,6 +3558,9 @@ enum ShippingPartnerCode {
   fedex
   ups
   other
+
+  @@map("shipping_partner_code")
+
 }
 
 enum ShippingServiceType {
@@ -3402,6 +3570,9 @@ enum ShippingServiceType {
   next_day
   international
   hyperlocal
+
+  @@map("shipping_service_type")
+
 }
 
 enum ShipmentStatus {
@@ -3416,6 +3587,9 @@ enum ShipmentStatus {
   lost
   damaged
   cancelled
+
+  @@map("shipment_status")
+
 }
 
 enum AwbStatus {
@@ -3424,6 +3598,9 @@ enum AwbStatus {
   used
   cancelled
   expired
+
+  @@map("awb_status")
+
 }
 
 enum PickupStatus {
@@ -3432,18 +3609,27 @@ enum PickupStatus {
   picked_up
   cancelled
   failed
+
+  @@map("pickup_status")
+
 }
 
 enum DeliveryAttemptStatus {
   success
   failed
   rescheduled
+
+  @@map("delivery_attempt_status")
+
 }
 
 enum ReverseShipmentType {
   customer_return
   warranty_return
   exchange_pickup
+
+  @@map("reverse_shipment_type")
+
 }
 
 enum ReverseShipmentStatus {
@@ -3454,6 +3640,9 @@ enum ReverseShipmentStatus {
   received
   cancelled
   failed
+
+  @@map("reverse_shipment_status")
+
 }
 
 enum RtoStatus {
@@ -3462,12 +3651,18 @@ enum RtoStatus {
   received
   closed
   cancelled
+
+  @@map("rto_status")
+
 }
 
 enum ShippingLabelFormat {
   pdf
   zpl
   png
+
+  @@map("shipping_label_format")
+
 }
 
 // ─────────────────────────────────────────────
@@ -4033,6 +4228,9 @@ enum InsuranceClaimStatus {
   rejected
   paid
   withdrawn
+
+  @@map("insurance_claim_status")
+
 }
 
 model CarrierSla {
@@ -4199,6 +4397,9 @@ enum WarrantyPlanType {
   extended
   adp
   amc
+
+  @@map("warranty_plan_type")
+
 }
 
 enum WarrantyRegistrationStatus {
@@ -4207,6 +4408,9 @@ enum WarrantyRegistrationStatus {
   expired
   void
   transferred
+
+  @@map("warranty_registration_status")
+
 }
 
 enum WarrantyClaimStatus {
@@ -4217,6 +4421,9 @@ enum WarrantyClaimStatus {
   in_service
   closed
   cancelled
+
+  @@map("warranty_claim_status")
+
 }
 
 enum ServiceTicketStatus {
@@ -4231,6 +4438,9 @@ enum ServiceTicketStatus {
   delivered
   closed
   cancelled
+
+  @@map("service_ticket_status")
+
 }
 
 enum RepairOutcome {
@@ -4239,6 +4449,9 @@ enum RepairOutcome {
   irreparable
   replaced
   customer_declined
+
+  @@map("repair_outcome")
+
 }
 
 enum RmaType {
@@ -4246,6 +4459,9 @@ enum RmaType {
   warranty_repair
   replacement
   refund
+
+  @@map("rma_type")
+
 }
 
 enum RmaStatus {
@@ -4256,6 +4472,9 @@ enum RmaStatus {
   completed
   rejected
   cancelled
+
+  @@map("rma_status")
+
 }
 
 enum ReplacementType {
@@ -4263,6 +4482,9 @@ enum ReplacementType {
   different_variant
   upgrade
   store_credit
+
+  @@map("replacement_type")
+
 }
 
 enum TradeInStatus {
@@ -4273,6 +4495,9 @@ enum TradeInStatus {
   rejected
   completed
   cancelled
+
+  @@map("trade_in_status")
+
 }
 
 // ─────────────────────────────────────────────
@@ -4962,6 +5187,9 @@ enum ServiceContractStatus {
   expired
   cancelled
   suspended
+
+  @@map("service_contract_status")
+
 }
 
 enum LoanDeviceStatus {
@@ -4969,6 +5197,9 @@ enum LoanDeviceStatus {
   allocated
   maintenance
   retired
+
+  @@map("loan_device_status")
+
 }
 
 enum LoanAllocationStatus {
@@ -4977,6 +5208,9 @@ enum LoanAllocationStatus {
   overdue
   lost
   cancelled
+
+  @@map("loan_allocation_status")
+
 }
 
 enum DeviceComponentStatus {
@@ -4986,6 +5220,9 @@ enum DeviceComponentStatus {
   poor
   failed
   not_tested
+
+  @@map("device_component_status")
+
 }
 
 model ServiceContract {

@@ -54,7 +54,7 @@ SUMMARY=$(cat <<EOF
 Generated: ${FINISHED}
 Suite started: ${STARTED}
 
-**Database version:** v1.0 (SQL migrations 001–045, schema locked)
+**Database version:** v1.0 (SQL migrations 001–046, schema locked)
 
 ## Overall: **${STATUS}** (${FAILURES} failed step group(s))
 
@@ -83,7 +83,7 @@ $([[ "${FAILURES}" -eq 0 ]] && echo "**YES** — all verification steps complete
 
 ## Deploy model
 
-Locked phases ship as \`database/sql/001\`–\`045\` applied in order (see \`docs/database/MigrationStrategy.md\`).
+Locked phases ship as \`database/sql/001\`–\`046\` applied in order (see \`docs/database/MigrationStrategy.md\`).
 Verification records checksums into \`_prisma_migrations\` for history audits. No schema changes were introduced by this framework.
 EOF
 )

@@ -43,3 +43,4 @@
 043_analytics_extensions.sql
 044_analytics_extension_indexes.sql
 045_analytics_extension_seed.sql
+046_record_status_enum.sql

@@ -18,7 +18,7 @@ log "Production dry-run"
 run_ts "${TS_DIR}/verifyProduction.ts"
 
 reset_public_schema
-apply_migrations_through 045
+apply_migrations_through 046
 prisma_validate
 prisma_generate
 
@@ -28,7 +28,7 @@ BODY_EXTRA=$(cat <<EOF
 
 | Check | Result |
 |-------|--------|
-| Clean schema deploy 001→045 | PASS |
+| Clean schema deploy 001→046 | PASS |
 | prisma validate | PASS |
 | prisma generate | PASS |
 

@@ -1,12 +1,12 @@
 #!/usr/bin/env bash
-# Deploy SQL migrations 001→045 (checksum-safe) + production reference seeds.
+# Deploy SQL migrations 001→046 (checksum-safe) + production reference seeds.
 # Demo seeds are excluded unless --demo-data / APPLY_DEMO_DATA=1.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
 source "${SCRIPT_DIR}/lib/common.sh"
 
-THROUGH="045"
+THROUGH="046"
 for arg in "$@"; do
   case "${arg}" in
     --demo-data)

@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Forward upgrade: install 001→020, then upgrade 021→045.
+# Forward upgrade: install 001→020, then upgrade 021→046.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -11,11 +11,11 @@ require_node
 APPLY_DEMO_DATA=1
 export APPLY_DEMO_DATA
 
-log "Forward upgrade: 001→020 then 021→045"
+log "Forward upgrade: 001→020 then 021→046"
 reset_public_schema
 apply_migrations_through 020
 MID="$(db_psql -Atc 'SELECT COUNT(*) FROM "_prisma_migrations"')"
-apply_migrations_range 021 045
+apply_migrations_range 021 046
 FINAL="$(db_psql -Atc 'SELECT COUNT(*) FROM "_prisma_migrations"')"
 
 run_ts "${TS_DIR}/verifyMigrationHistory.ts"
@@ -29,7 +29,7 @@ Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 | Stage | Migrations recorded |
 |-------|---------------------|
 | After 001→020 | ${MID} |
-| After 021→045 | ${FINAL} |
+| After 021→046 | ${FINAL} |
 | Expected total | $(count_expected_migrations) |
 
 | Check | Result |

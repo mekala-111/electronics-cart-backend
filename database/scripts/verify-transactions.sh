@@ -40,7 +40,7 @@ if [[ "${PROBE}" != "0" ]]; then
 fi
 
 # Resume remaining migrations
-apply_migrations_range 010 045
+apply_migrations_range 010 046
 run_ts "${TS_DIR}/verifyMigrationHistory.ts"
 
 BODY=$(cat <<EOF
@@ -53,7 +53,7 @@ Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 | Apply 001→009 | PASS |
 | Simulated in-transaction failure | rolled back (exit ${TX_RC}) |
 | Partial object leftover | none |
-| Resume 010→045 | PASS |
+| Resume 010→046 | PASS |
 | Migration history (45) | PASS |
 
 PostgreSQL aborted the failed transaction; no partial DDL remained. Redeploy of remaining files succeeded.

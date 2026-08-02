@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Clean database: reset schema, apply 001→045, validate Prisma, generate client, check history.
+# Clean database: reset schema, apply 001→046, validate Prisma, generate client, check history.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -16,7 +16,7 @@ EXPECTED="$(count_expected_migrations)"
 log "Clean install verification (expect ${EXPECTED} migrations)"
 
 reset_public_schema
-apply_migrations_through 045
+apply_migrations_through 046
 
 prisma_validate
 ok "prisma validate"
@@ -39,7 +39,7 @@ Generated: $(date -u +%Y-%m-%dT%H:%M:%SZ)
 | Check | Result |
 |-------|--------|
 | Schema reset | PASS |
-| Migrations applied | 001 → 045 |
+| Migrations applied | 001 → 046 |
 | Recorded migrations | $(db_psql -Atc 'SELECT COUNT(*) FROM "_prisma_migrations"') |
 | Expected migrations | ${EXPECTED} |
 | Tables (public) | ${TABLE_COUNT} |

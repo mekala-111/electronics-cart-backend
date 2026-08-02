@@ -2,13 +2,16 @@
 node_modules/
 dist/
 coverage/
-storage/
+
+# Runtime storage only
+/storage/
+uploads/tmp/
+
 logs/
 tmp/
-uploads/tmp/
 *.log
 
-# Env — never commit secrets
+# Environment
 .env
 .env.*
 !.env.example
@@ -18,5 +21,3 @@ uploads/tmp/
 .DS_Store
 .idea/
 .vscode/
-
-# Prisma (generated under database package when using shared schema)

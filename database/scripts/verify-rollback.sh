@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Rollback checkpoints: 001→N→clean→001 for N in 010 020 030 045.
+# Rollback checkpoints: 001→N→clean→001 for N in 010 020 030 046.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=lib/common.sh
@@ -16,9 +16,9 @@ RESULTS=()
 FAILED=0
 
 restore_full() {
-  log "Restoring full 001→045 after rollback tests"
+  log "Restoring full 001→046 after rollback tests"
   reset_public_schema
-  apply_migrations_through 045
+  apply_migrations_through 046
 }
 
 trap restore_full EXIT
@@ -43,7 +43,7 @@ run_checkpoint() {
 }
 
 if [[ "${CHECKPOINT}" == "all" ]]; then
-  for n in 010 020 030 045; do
+  for n in 010 020 030 046; do
     run_checkpoint "${n}"
   done
 else

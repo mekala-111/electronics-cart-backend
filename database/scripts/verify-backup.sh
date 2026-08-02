@@ -36,9 +36,9 @@ log "Backup verification: dump ${PGDATABASE:-electronics_cart} → restore ${RES
 ensure_prisma_migrations_table
 MIG_COUNT="$(db_psql -Atc 'SELECT COUNT(*) FROM "_prisma_migrations" WHERE finished_at IS NOT NULL AND rolled_back_at IS NULL')"
 if [[ "${MIG_COUNT}" -lt 45 ]]; then
-  log "Source DB has ${MIG_COUNT}/45 migrations — deploying 001→045 first"
+  log "Source DB has ${MIG_COUNT}/46 migrations — deploying 001→046 first"
   reset_public_schema
-  apply_migrations_through 045
+  apply_migrations_through 046
 fi
 
 admin_psql() {
