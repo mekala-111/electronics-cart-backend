@@ -1,13 +1,28 @@
 #!/usr/bin/env bash
 # Full production deploy:
-# pull → install → build → migrate → reference seed → PM2 reload → health → rollback on failure
+# load .env → pull → install → build → migrate → reference seed → PM2 reload → health → rollback on failure
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# Load secrets from backend/.env (PM2 may already have them; deploy CLI does not)
+if [[ -f "$ROOT/.env" ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source "$ROOT/.env"
+  set +a
+  echo "[deploy] loaded $ROOT/.env"
+else
+  echo "[deploy] warning: $ROOT/.env not found — relying on exported shell env" >&2
+fi
+
 PREV_REV=""
 if git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   PREV_REV="$(git rev-parse HEAD)"
+  # Prefer branch tip so we are not stuck in detached HEAD after a failed rollback
+  if git rev-parse --abbrev-ref origin/main >/dev/null 2>&1; then
+    git checkout -B main origin/main
+  fi
   echo "[deploy] pulling..."
   git pull --ff-only
 fi
