@@ -17,13 +17,6 @@ import { transactionContextMiddleware } from './shared/context/transaction-conte
 async function bootstrap() {
   validateEnvironment(process.env);
 
-  // Prisma MediaFile.byte_size is BigInt — without this, JSON responses 500
-  if (!(BigInt.prototype as { toJSON?: () => string }).toJSON) {
-    (BigInt.prototype as { toJSON: () => string }).toJSON = function toJSON() {
-      return this.toString();
-    };
-  }
-
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bufferLogs: true,
     rawBody: true,
