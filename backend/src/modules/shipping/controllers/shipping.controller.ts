@@ -92,7 +92,7 @@ export class ShippingController {
 
   @Public()
   @Post(['webhooks/tracking', 'webhooks/shiprocket'])
-  @Idempotent()
+  @Idempotent({ required: false })
   @ApiOperation({
     summary: 'Carrier tracking webhook (Shiprocket)',
     description:
