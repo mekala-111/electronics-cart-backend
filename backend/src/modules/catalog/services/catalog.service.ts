@@ -1,9 +1,13 @@
 import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Prisma, ProductCondition, SeoEntityType, StockStatus } from '@prisma/client';
+import { randomUUID } from 'node:crypto';
+import { extname } from 'node:path';
 import { AppException } from '../../../core/errors/app.exception';
 import { ErrorCodes } from '../../../core/errors/error-codes';
 import { paginatedResult } from '../../../common/utils/pagination.util';
 import { LockService } from '../../../shared/lock/lock.service';
+import { StorageService } from '../../../shared/storage/storage.service';
 import { CATALOG_CACHE, UUID_RE } from '../constants/catalog.constants';
 import { CreateBrandDto, UpdateBrandDto } from '../dto/brand.dto';
 import { CreateCategoryDto, UpdateCategoryDto } from '../dto/category.dto';
@@ -60,7 +64,17 @@ export class CatalogService {
     private readonly cache: CatalogCacheService,
     private readonly locks: LockService,
     private readonly events: CatalogEventPublisher,
+    private readonly storage: StorageService,
+    private readonly config: ConfigService,
   ) {}
+
+  private mediaPublicUrl(objectKey: string): string {
+    if (/^https?:\/\//i.test(objectKey)) return objectKey;
+    const base = (
+      this.config.get<string>('storage.publicUrl') ?? 'http://localhost:3051/uploads'
+    ).replace(/\/$/, '');
+    return `${base}/${objectKey.replace(/^\//, '')}`;
+  }
 
   // ─── Public reads ─────────────────────────────────────────
 
@@ -184,6 +198,7 @@ export class CatalogService {
           altText: m.alt_text,
           isPrimary: m.is_primary,
           sortOrder: m.sort_order,
+          url: this.mediaPublicUrl(m.media_file.object_key),
           file: {
             id: m.media_file.id,
             bucket: m.media_file.bucket,
@@ -195,6 +210,7 @@ export class CatalogService {
         videos: videos.map((m) => ({
           id: m.id,
           altText: m.alt_text,
+          url: this.mediaPublicUrl(m.media_file.object_key),
           file: {
             id: m.media_file.id,
             bucket: m.media_file.bucket,
@@ -259,6 +275,7 @@ export class CatalogService {
       altText: m.alt_text,
       isPrimary: m.is_primary,
       sortOrder: m.sort_order,
+      url: this.mediaPublicUrl(m.media_file.object_key),
       file: {
         id: m.media_file.id,
         bucket: m.media_file.bucket,
@@ -615,7 +632,52 @@ export class CatalogService {
       sort_order: dto.sortOrder ?? 0,
     });
     await this.cache.invalidateProduct(productId);
-    return row;
+    return {
+      id: row.id,
+      altText: row.alt_text,
+      isPrimary: row.is_primary,
+      sortOrder: row.sort_order,
+      url: this.mediaPublicUrl(row.media_file.object_key),
+      file: {
+        id: row.media_file.id,
+        bucket: row.media_file.bucket,
+        objectKey: row.media_file.object_key,
+        mimeType: row.media_file.mime_type,
+      },
+    };
+  }
+
+  async uploadMediaFile(
+    file: { buffer: Buffer; mimetype: string; originalname: string; size: number },
+    actorId?: string,
+  ) {
+    const ext = extname(file.originalname || '').toLowerCase() || '.jpg';
+    const objectKey = `products/${new Date().toISOString().slice(0, 10)}/${randomUUID()}${ext}`;
+    const bucket = this.config.get<string>('storage.bucket') ?? 'electronics-cart';
+
+    await this.storage.put(objectKey, file.buffer, { contentType: file.mimetype });
+
+    const row = await this.aux.client.mediaFile.create({
+      data: {
+        bucket,
+        object_key: objectKey,
+        mime_type: file.mimetype,
+        byte_size: BigInt(file.size || file.buffer.length),
+        kind: 'image',
+        original_name: file.originalname?.slice(0, 255) || null,
+        status: 'active',
+        created_by: actorId,
+        updated_by: actorId,
+      },
+    });
+
+    return {
+      id: row.id,
+      bucket: row.bucket,
+      objectKey: row.object_key,
+      mimeType: row.mime_type,
+      url: this.mediaPublicUrl(row.object_key),
+    };
   }
 
   async deleteMedia(productId: string, mediaId: string) {

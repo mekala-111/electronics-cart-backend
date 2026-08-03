@@ -5,6 +5,7 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from 'nestjs-pino';
 import compression from 'compression';
 import helmet from 'helmet';
+import { resolve } from 'node:path';
 import { AppModule } from './app.module';
 import { requestIdMiddleware } from './common/middleware/request-id.middleware';
 import { createValidationPipe } from './common/pipes/validation.pipe';
@@ -134,6 +135,11 @@ async function bootstrap() {
 
   app.enableShutdownHooks();
 
+  const localUploadPath = resolve(
+    config.get<string>('storage.localPath') ?? './uploads',
+  );
+  app.useStaticAssets(localUploadPath, { prefix: '/uploads/' });
+
   if (role === 'worker') {
     await app.init();
     logger.log('Worker process ready (HTTP listener disabled)');
@@ -142,6 +148,7 @@ async function bootstrap() {
 
   await app.listen(port);
   logger.log(`API ready on http://localhost:${port}/${apiPrefix}`);
+  logger.log(`Uploads served from ${localUploadPath} at /uploads/`);
 }
 
 void bootstrap();

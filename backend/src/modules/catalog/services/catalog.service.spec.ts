@@ -84,6 +84,17 @@ describe('CatalogService', () => {
     productDeleted: jest.fn(),
   };
 
+  const storage = {
+    put: jest.fn(async () => undefined),
+  };
+  const config = {
+    get: jest.fn((key: string, fallback?: string) => {
+      if (key === 'storage.publicUrl') return 'http://localhost:3051/uploads';
+      if (key === 'storage.bucket') return 'electronics-cart';
+      return fallback;
+    }),
+  };
+
   const service = new CatalogService(
     brands as never,
     categories as never,
@@ -94,6 +105,8 @@ describe('CatalogService', () => {
     cache as never,
     locks as never,
     events as never,
+    storage as never,
+    config as never,
   );
 
   beforeEach(() => jest.clearAllMocks());

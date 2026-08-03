@@ -3,6 +3,7 @@ import { PrismaModule } from '../../database/prisma.module';
 import { CacheModule } from '../../shared/cache/cache.module';
 import { LockModule } from '../../shared/lock/lock.module';
 import { AdminCatalogController } from './controllers/admin-catalog.controller';
+import { AdminMediaController } from './controllers/admin-media.controller';
 import { CatalogController } from './controllers/catalog.controller';
 import { CatalogEventPublisher } from './events/catalog-event.publisher';
 import { BrandRepository } from './repositories/brand.repository';
@@ -16,7 +17,7 @@ import { CatalogService } from './services/catalog.service';
 
 @Module({
   imports: [PrismaModule, CacheModule, LockModule],
-  controllers: [CatalogController, AdminCatalogController],
+  controllers: [CatalogController, AdminCatalogController, AdminMediaController],
   providers: [
     BrandRepository,
     CategoryRepository,
