@@ -8,10 +8,12 @@ cd "$ROOT"
 
 # Load secrets from backend/.env (PM2 may already have them; deploy CLI does not)
 if [[ -f "$ROOT/.env" ]]; then
+  set +u
   set -a
   # shellcheck disable=SC1091
   source "$ROOT/.env"
   set +a
+  set -u
   echo "[deploy] loaded $ROOT/.env"
 else
   echo "[deploy] warning: $ROOT/.env not found — relying on exported shell env" >&2
