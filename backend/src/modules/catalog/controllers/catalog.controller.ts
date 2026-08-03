@@ -17,6 +17,13 @@ export class CatalogController {
   }
 
   @Public()
+  @Get('product-types')
+  @ApiOperation({ summary: 'List active product types' })
+  listProductTypes() {
+    return this.catalog.listProductTypes();
+  }
+
+  @Public()
   @Get('categories')
   @ApiOperation({ summary: 'List active categories (flat)' })
   listCategories() {

@@ -42,6 +42,18 @@ export class AdminOrdersController {
     );
   }
 
+  @Get('invoices')
+  @Permissions(ORDERS_PERMISSIONS.READ)
+  listInvoices(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.orders.listInvoices(
+      page ? Number(page) : 1,
+      limit ? Number(limit) : 50,
+    );
+  }
+
   @Get(':id')
   @Permissions(ORDERS_PERMISSIONS.READ)
   detail(@Param('id') id: string) {

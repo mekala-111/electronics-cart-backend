@@ -6,6 +6,10 @@ import { PrismaService } from '../../../database/prisma.service';
 export class CatalogAuxRepository {
   constructor(private readonly prisma: PrismaService) {}
 
+  get client() {
+    return this.prisma;
+  }
+
   createSpecification(data: Prisma.ProductSpecificationCreateInput) {
     return this.prisma.productSpecification.create({ data });
   }

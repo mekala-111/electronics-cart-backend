@@ -112,6 +112,90 @@ export class CmsService {
     return { id: updated.id, status: updated.status };
   }
 
+  /** ponytail: store settings live in a published CMS page section — no new table */
+  async getStoreSettings() {
+    const page = await this.repo.client.cmsPage.findFirst({
+      where: { slug: 'store-settings', deleted_at: null },
+      include: {
+        sections: {
+          where: { deleted_at: null, section_key: 'store' },
+          take: 1,
+        },
+      },
+    });
+    const cfg = (page?.sections[0]?.config_json ?? {}) as Record<string, unknown>;
+    return {
+      storeName: String(cfg.storeName ?? 'Electronics Cart'),
+      supportPhone: String(cfg.supportPhone ?? ''),
+      gstin: String(cfg.gstin ?? ''),
+      pageId: page?.id ?? null,
+    };
+  }
+
+  async upsertStoreSettings(
+    actorId: string,
+    dto: { storeName?: string; supportPhone?: string; gstin?: string },
+  ) {
+    const current = await this.getStoreSettings();
+    const next = {
+      storeName: dto.storeName ?? current.storeName,
+      supportPhone: dto.supportPhone ?? current.supportPhone,
+      gstin: dto.gstin ?? current.gstin,
+    };
+
+    let page = await this.repo.client.cmsPage.findFirst({
+      where: { slug: 'store-settings', deleted_at: null },
+      include: { sections: { where: { deleted_at: null, section_key: 'store' }, take: 1 } },
+    });
+
+    if (!page) {
+      page = await this.repo.client.cmsPage.create({
+        data: {
+          slug: 'store-settings',
+          title: 'Store Settings',
+          page_type: 'settings',
+          status: 'published',
+          published_at: new Date(),
+          created_by: actorId,
+          updated_by: actorId,
+          sections: {
+            create: {
+              section_key: 'store',
+              section_type: 'json',
+              title: 'Store',
+              config_json: next,
+              created_by: actorId,
+            },
+          },
+        },
+        include: { sections: true },
+      });
+    } else if (page.sections[0]) {
+      await this.repo.client.cmsSection.update({
+        where: { id: page.sections[0].id },
+        data: { config_json: next, updated_by: actorId },
+      });
+      await this.repo.client.cmsPage.update({
+        where: { id: page.id },
+        data: { status: 'published', published_at: new Date(), updated_by: actorId },
+      });
+    } else {
+      await this.repo.client.cmsSection.create({
+        data: {
+          page_id: page.id,
+          section_key: 'store',
+          section_type: 'json',
+          title: 'Store',
+          config_json: next,
+          created_by: actorId,
+        },
+      });
+    }
+
+    await this.cache.invalidatePage('store-settings');
+    return next;
+  }
+
   listBanners() {
     return this.cache.getOrSet(MARKETING_CACHE.banners(), async () => {
       const now = new Date();

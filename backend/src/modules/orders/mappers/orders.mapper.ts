@@ -30,8 +30,15 @@ export function mapCart(
 }
 
 export function mapOrderSummary(
-  order: Order & { items?: OrderItem[] },
+  order: Order & {
+    items?: OrderItem[];
+    customer?: { email?: string | null; mobile?: string | null } | null;
+  },
 ) {
+  const customerLabel =
+    order.customer?.email?.trim() ||
+    order.customer?.mobile?.trim() ||
+    undefined;
   return {
     id: order.id,
     orderNumber: order.order_number,
@@ -45,5 +52,7 @@ export function mapOrderSummary(
     placedAt: order.placed_at,
     cancelledAt: order.cancelled_at,
     itemCount: order.items?.length ?? undefined,
+    customerId: order.customer_id ?? undefined,
+    customer: customerLabel,
   };
 }

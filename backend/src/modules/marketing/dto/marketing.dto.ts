@@ -93,6 +93,26 @@ export class PatchCmsPageDto {
   status?: 'draft' | 'published' | 'archived';
 }
 
+export class StoreSettingsDto {
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  storeName?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  supportPhone?: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  gstin?: string;
+}
+
 export class CreateBannerDto {
   @ApiProperty()
   @IsString()

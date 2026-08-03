@@ -7,6 +7,7 @@ export const CATALOG_CACHE = {
   TTL: 300,
   PREFIX: 'catalog',
   brands: () => 'catalog:brands:list',
+  productTypes: () => 'catalog:product-types:list',
   categories: () => 'catalog:categories:list',
   categoryTree: () => 'catalog:categories:tree',
   collections: () => 'catalog:collections:list',

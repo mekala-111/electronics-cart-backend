@@ -371,6 +371,36 @@ export class OrdersService {
     });
   }
 
+  async listInvoices(page = 1, limit = 50) {
+    const take = Math.min(limit, 100);
+    const where = { deleted_at: null };
+    const [total, rows] = await this.orders.client.$transaction([
+      this.orders.client.invoice.count({ where }),
+      this.orders.client.invoice.findMany({
+        where,
+        include: { order: { select: { order_number: true } } },
+        orderBy: { created_at: 'desc' },
+        skip: (page - 1) * take,
+        take,
+      }),
+    ]);
+    return paginatedResult(
+      rows.map((inv) => ({
+        id: inv.id,
+        invoiceNumber: inv.invoice_number,
+        orderId: inv.order_id,
+        orderNumber: inv.order.order_number,
+        status: inv.status,
+        currency: inv.currency,
+        grandTotal: Number(inv.grand_total),
+        invoiceDate: inv.invoice_date,
+      })),
+      page,
+      take,
+      total,
+    );
+  }
+
   // Wishlist
   async getWishlist(userId: string) {
     const wl = await this.wishlists.getOrCreate(userId);

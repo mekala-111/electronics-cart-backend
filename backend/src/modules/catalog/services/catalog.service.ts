@@ -70,6 +70,21 @@ export class CatalogService {
     );
   }
 
+  listProductTypes() {
+    return this.cache.getOrSet(CATALOG_CACHE.productTypes(), async () => {
+      const rows = await this.aux.client.productType.findMany({
+        where: { deleted_at: null, status: 'active' },
+        orderBy: { name: 'asc' },
+      });
+      return rows.map((t) => ({
+        id: t.id,
+        code: t.code,
+        name: t.name,
+        description: t.description,
+      }));
+    });
+  }
+
   listCategories() {
     return this.cache.getOrSet(CATALOG_CACHE.categories(), async () =>
       (await this.categories.listActive()).map(mapCategory),

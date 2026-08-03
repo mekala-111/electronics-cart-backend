@@ -4,6 +4,7 @@ import { PrismaModule } from '../../database/prisma.module';
 import { CacheModule } from '../../shared/cache/cache.module';
 import { MailModule } from '../../shared/mail/mail.module';
 import { QueueModule } from '../../shared/queue/queue.module';
+import { AdminCustomersController } from './controllers/admin-customers.controller';
 import { AuthController } from './controllers/auth.controller';
 import { AuthEventPublisher } from './events/auth-event.publisher';
 import { AuditRepository } from './repositories/audit.repository';
@@ -16,6 +17,7 @@ import { UserRepository } from './repositories/user.repository';
 import { AuditService } from './services/audit.service';
 import { AuthMailService } from './services/auth-mail.service';
 import { AuthService } from './services/auth.service';
+import { CustomerAdminService } from './services/customer-admin.service';
 import { FirebaseAuthService } from './services/firebase-auth.service';
 import { OtpService } from './services/otp.service';
 import { PasswordService } from './services/password.service';
@@ -30,7 +32,7 @@ import { TokenService } from './services/token.service';
     MailModule,
     QueueModule,
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, AdminCustomersController],
   providers: [
     UserRepository,
     RoleRepository,
@@ -48,6 +50,7 @@ import { TokenService } from './services/token.service';
     FirebaseAuthService,
     AuthService,
     AuthEventPublisher,
+    CustomerAdminService,
   ],
   exports: [AuthService],
 })

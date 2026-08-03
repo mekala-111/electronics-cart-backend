@@ -37,6 +37,7 @@ import {
   CreateSearchKeywordDto,
   LoyaltyEarnDto,
   PatchCmsPageDto,
+  StoreSettingsDto,
 } from '../dto/marketing.dto';
 import { CmsService } from '../services/cms.service';
 import { CouponService } from '../services/coupon.service';
@@ -58,6 +59,20 @@ import {
 @Controller('admin')
 export class AdminCmsController {
   constructor(private readonly cms: CmsService) {}
+
+  @Get('settings')
+  @Permissions(CMS_PERMISSIONS.READ)
+  @ApiOperation({ summary: 'Store settings' })
+  getSettings() {
+    return this.cms.getStoreSettings();
+  }
+
+  @Patch('settings')
+  @Idempotent()
+  @ApiOperation({ summary: 'Update store settings' })
+  patchSettings(@CurrentUser() user: AuthUser, @Body() dto: StoreSettingsDto) {
+    return this.cms.upsertStoreSettings(user.sub, dto);
+  }
 
   @Post('cms/pages')
   @Idempotent()
