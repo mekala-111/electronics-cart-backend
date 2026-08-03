@@ -91,12 +91,17 @@ export class ShippingController {
   }
 
   @Public()
-  @Post('webhooks/shiprocket')
+  @Post(['webhooks/tracking', 'webhooks/shiprocket'])
   @Idempotent()
-  @ApiOperation({ summary: 'Shiprocket carrier webhook' })
+  @ApiOperation({
+    summary: 'Carrier tracking webhook (Shiprocket)',
+    description:
+      'Prefer /shipping/webhooks/tracking — Shiprocket rejects URLs containing "shiprocket". Accepts x-api-key or x-api-hmac-sha256.',
+  })
   shiprocketWebhook(
     @Req() req: Request & { rawBody?: Buffer },
-    @Headers('x-api-hmac-sha256') signature: string,
+    @Headers('x-api-hmac-sha256') hmac: string | undefined,
+    @Headers('x-api-key') apiKey: string | undefined,
     @Body() body: Record<string, unknown>,
   ) {
     if (!req.rawBody || !Buffer.isBuffer(req.rawBody)) {
@@ -106,7 +111,7 @@ export class ShippingController {
     }
     return this.webhooks.receiveShiprocket({
       rawBody: req.rawBody,
-      signature: signature ?? '',
+      signature: hmac || apiKey || '',
       payload: body,
     });
   }

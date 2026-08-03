@@ -181,6 +181,16 @@ export class ShiprocketProvider implements ShippingProvider {
       '';
     if (this.mock && !secret) return true;
     if (!secret || !input.signature) return false;
+
+    // Shiprocket dashboard "x-api-key" mode: static token header
+    try {
+      const a = Buffer.from(secret);
+      const b = Buffer.from(input.signature);
+      if (a.length === b.length && timingSafeEqual(a, b)) return true;
+    } catch {
+      /* fall through to HMAC */
+    }
+
     const body =
       typeof input.rawBody === 'string'
         ? input.rawBody
