@@ -5,10 +5,12 @@ REPO="$(cd "$ROOT/.." && pwd)"
 cd "$ROOT"
 
 if [[ -f "$ROOT/.env" ]]; then
+  set +u
   set -a
   # shellcheck disable=SC1091
   source "$ROOT/.env"
   set +a
+  set -u
 fi
 
 # Prefer pnpm; bootstrap via corepack/npm and resolve global bin onto PATH

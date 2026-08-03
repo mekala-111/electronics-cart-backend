@@ -9,10 +9,12 @@ fi
 cd "$ROOT"
 
 if [[ -f "$ROOT/.env" ]]; then
+  set +u
   set -a
   # shellcheck disable=SC1091
   source "$ROOT/.env"
   set +a
+  set -u
 fi
 
 ensure_pnpm() {
